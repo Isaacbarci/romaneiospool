@@ -127,8 +127,7 @@
         .edited-row {
             background-color: lightblue !important;
         }
-
-         </style>
+  </style>
 </head>
 <body>
     <h2>ROMANEIO DE SPOOL</h2>
@@ -138,7 +137,7 @@
         <option value="Raizen.xlsx">Raizen</option>
     </select>
     <button onclick="confirmUpdate()">Atualizar Arquivo</button>
-    <input type="text" id="identificacaoFilter" placeholder="Filtrar por ISOMÉTRICO ou QR Code" onkeyup="applyFilter()">
+    <input type="text" id="identificacaoFilter" placeholder="Filtrar por ISOMÉTRICO ou QR Code">
     <button onclick="downloadOriginal()">Download do Arquivo Original</button>
     <button onclick="startQrScanner()">Escanear QR Code</button>
 
@@ -190,6 +189,21 @@
             "MATERIAL"
         ];
 
+        // Função debounce para melhorar o desempenho do filtro
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        // Aplica o filtro com debounce
+        const applyFilterDebounced = debounce(applyFilter, 300);
+
+        // Configura o evento de input com debounce
+        document.getElementById("identificacaoFilter").addEventListener("input", applyFilterDebounced);
+
         function confirmUpdate() {
             const selectedFile = document.getElementById("fileList").value;
             if (!selectedFile) {
@@ -221,10 +235,8 @@
                     }
 
                     data = jsonData;
-                    localStorage.setItem("uploadedData", JSON.stringify(data));
                     filteredData = data.slice(1);
                     editedRows.clear();
-                    localStorage.removeItem("editedRows");
                     findColumnIndexes();
                     renderTable();
                 })
@@ -329,8 +341,6 @@
                 data[originalIndex][columnIndexes["obs romaneio"]] = editedRow[1];
 
                 editedRows.add(originalIndex);
-                localStorage.setItem("uploadedData", JSON.stringify(data));
-                localStorage.setItem("editedRows", JSON.stringify(Array.from(editedRows)));
             }
 
             document.getElementById("editModal").style.display = "none";
@@ -410,17 +420,18 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            const storedData = localStorage.getItem("uploadedData");
+            // Carrega os dados do localStorage (se existirem)
+            const storedData = loadFromLocalStorage("uploadedData");
             if (storedData) {
-                data = JSON.parse(storedData);
+                data = storedData;
                 filteredData = data.slice(1);
                 findColumnIndexes();
                 renderTable();
             }
 
-            const storedEditedRows = localStorage.getItem("editedRows");
+            const storedEditedRows = loadFromLocalStorage("editedRows");
             if (storedEditedRows) {
-                editedRows = new Set(JSON.parse(storedEditedRows));
+                editedRows = new Set(storedEditedRows);
                 renderTable();
             }
         });
