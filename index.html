@@ -124,19 +124,6 @@
         .edited-row {
             background-color: lightblue !important;
         }
-        .pagination {
-            margin-top: 20px;
-            text-align: center;
-        }
-        .pagination button {
-            margin: 0 5px;
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        .pagination button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
     </style>
 </head>
 <body>
@@ -163,12 +150,6 @@
         </table>
     </div>
 
-    <div class="pagination">
-        <button id="prevPage" onclick="changePage(-1)">Anterior</button>
-        <span id="pageInfo">Página 1 de 1</span>
-        <button id="nextPage" onclick="changePage(1)">Próxima</button>
-    </div>
-
     <div id="editModal" class="modal">
         <input type="hidden" id="editIndex">
         <label>ISOMÉTRICO: <input type="text" id="ISOMETRICO" readonly></label>
@@ -187,8 +168,7 @@
         let columnIndexes = {};
         let editedRows = new Set();
         let qrScanner;
-        let currentPage = 1;
-        const itemsPerPage = 1000; // Itens por página
+        const itemsPerPage = 500; // Itens por página
 
         const hiddenColumns = [
             "SERVIÇO", "LOCAL FABRICAÇÃO", "TR / CJ", "IDENTIFICAÇÃO", "REV",
@@ -259,9 +239,7 @@
                     filteredData = data.slice(1);
                     editedRows.clear();
                     findColumnIndexes();
-                    currentPage = 1; // Reinicia a paginação
                     renderTable();
-                    updatePagination();
                     saveToLocalStorage("uploadedData", data);
                     saveToLocalStorage("editedRows", Array.from(editedRows));
                 })
@@ -321,9 +299,7 @@
             thead.appendChild(headerRow);
 
             // Renderiza os itens da página atual
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const pageData = filteredData.slice(startIndex, endIndex);
+            const pageData = filteredData.slice(0, itemsPerPage);
 
             pageData.forEach((row, rowIndex) => {
                 const tr = document.createElement("tr");
@@ -333,7 +309,7 @@
                 if (dataRomaneio && editedRows.has(originalIndex)) {
                     tr.classList.add("edited-row");
                 }
-                tr.onclick = () => openEditModal(startIndex + rowIndex);
+                tr.onclick = () => openEditModal(rowIndex);
                 row.forEach((cell, colIndex) => {
                     if (!hiddenColumns.includes(data[0][colIndex].trim().toLowerCase())) {
                         const td = document.createElement("td");
@@ -347,24 +323,6 @@
                 });
                 tbody.appendChild(tr);
             });
-        }
-
-        function updatePagination() {
-            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-            document.getElementById("pageInfo").textContent = `Página ${currentPage} de ${totalPages}`;
-            document.getElementById("prevPage").disabled = currentPage === 1;
-            document.getElementById("nextPage").disabled = currentPage === totalPages;
-        }
-
-        function changePage(delta) {
-            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-            const newPage = currentPage + delta;
-
-            if (newPage >= 1 && newPage <= totalPages) {
-                currentPage = newPage;
-                renderTable();
-                updatePagination();
-            }
         }
 
         function openEditModal(index) {
@@ -451,9 +409,7 @@
                 const isometrico = row[columnIndexes["isométrico"]]?.toString().toLowerCase();
                 return isometrico?.includes(filterValue) || row.some(cell => cell.toString().toLowerCase().includes(filterValue));
             });
-            currentPage = 1; // Reinicia a paginação ao aplicar o filtro
             renderTable();
-            updatePagination();
         }
 
         function downloadOriginal() {
@@ -514,9 +470,7 @@
                 data = storedData;
                 filteredData = data.slice(1);
                 findColumnIndexes();
-                currentPage = 1;
                 renderTable();
-                updatePagination();
             }
 
             const storedEditedRows = loadFromLocalStorage("editedRows");
