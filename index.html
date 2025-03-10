@@ -155,7 +155,6 @@
         <label>ISOMÉTRICO: <input type="text" id="ISOMETRICO" readonly></label>
         <label>SPOOL: <input type="text" id="SPOOL" readonly></label>
         <label>PROG FAB: <input type="text" id="PROGFAB" readonly></label>
-        <label>PESO: <input type="text" id="PESO" readonly></label>
         <label>Data do Romaneio: <input type="date" id="DATADOROMANEIO"></label>
         <button class="save-btn" onclick="saveEdit()">Salvar</button>
         <button class="close-btn" onclick="closeModal()">Fechar</button>
@@ -186,7 +185,7 @@
             "DECAP. FAB", "DATA DECAP. FAB", "RETOQUE / DECAP. MONT.",
             "DATA RETOQUE / DECAP. MONT.", "DIÂM. NOMINAL", "SCH", "ÁREA SUPERF.",
             "COMPRIMENTO", "Data Cadastro", "ID_ISOMETRICO", "ID_SPOOL", "ÁREA",
-            "MATERIAL", "PESO", "OBS ROMANEIO", "PROG FAB" // Adicionando as colunas a serem ocultas
+            "MATERIAL", "PESO", "OBS ROMANEIO" // Colunas a serem ocultas
         ];
 
         // Função debounce para melhorar o desempenho do filtro
@@ -330,7 +329,6 @@
             document.getElementById("ISOMETRICO").value = filteredData[index][columnIndexes["isométrico"]] || "N/A";
             document.getElementById("SPOOL").value = filteredData[index][columnIndexes["spool"]] || "N/A";
             document.getElementById("PROGFAB").value = filteredData[index][columnIndexes["prog fab"]] || "N/A";
-            document.getElementById("PESO").value = filteredData[index][columnIndexes["peso"]] || "N/A";
             document.getElementById("DATADOROMANEIO").value = formatDateForInput(filteredData[index][columnIndexes["data do romaneio"]]);
 
             document.getElementById("editModal").style.display = "block";
