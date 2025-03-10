@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Romaneio de Suporte</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        h2 {
+            color: #333;
+            padding: 20px;
+            margin: 0;
+        }
+        input[type="text"], button {
+            margin: 5px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+        input[type="text"] {
+            width: 300px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .close-btn {
+            background-color: #dc3545;
+        }
+        .close-btn:hover {
+            background-color: #c82333;
+        }
+        .save-btn {
+            background-color: #28a745;
+        }
+        .save-btn:hover {
+            background-color: #218838;
+        }
+        .table-container {
+            width: 100%;
+            overflow-x: auto; /* Permite rolagem horizontal */
+            overflow-y: hidden; /* Remove a rolagem vertical */
+            margin-top: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: max-content; /* Faz a tabela ter a largura do conteúdo */
+            min-width: 100%; /* Garante que a tabela ocupe pelo menos 100% do contêiner */
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border: 2px solid black;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 10px;
+            font-size: 14px;
+            text-align: left;
+            white-space: nowrap; /* Evita quebra de linha nas células */
+        }
+        th {
+            background-color: #007BFF;
+            color: white;
+            text-align: left;
+        }
+        td {
+            cursor: pointer;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            width: 90%;
+            max-width: 450px;
+            max-height: 85vh;
+            overflow-y: auto;
+            text-align: left;
+            border: 3px solid black;
+        }
+        .modal label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+        .modal input {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .modal input[readonly] {
+            background-color: #f9f9f9;
+            cursor: not-allowed;
+        }
+        .modal button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .edited-row {
+            background-color: lightblue !important;
+        }
+    </style>
+</head>
+<body>
+    <h2>ROMANEIO DE SPOOL
+    </h2>
+    <select id="fileList">
+        <option value="">Selecione um arquivo</option>
+        <option value="Patio de Madeira.xlsx">Patio de Madeira</option>
+        <option value="Raizen.xlsx">Raizen</option>
+    </select>
+    <button onclick="confirmUpdate()">Atualizar Arquivo</button>
+    <input type="text" id="identificacaoFilter" placeholder="Filtrar por QR ou Identificação" onkeyup="applyFilter()">
+    <button onclick="downloadExcel()">Download Excel</button>
+    <button onclick="startQrScanner()">Escanear QR Code</button>
+
+    <div id="qr-container" style="display: none;">
+        <div id="qr-reader" style="width:300px; margin-top:10px;"></div>
+        <button class="close-btn" id="closeScannerBtn" style="display: none;" onclick="stopQrScanner()">Fechar Scanner</button>
+    </div>
+
+    <div class="table-container">
+        <table id="dataTable"></table>
+    </div>
+
+    <div id="editModal" class="modal">
+        <input type="hidden" id="editIndex">
+        <label>Posição / TAG: <input type="text" id="POSICAOTAG" readonly></label>
+        <label>Identificação 1: <input type="text" id="IDENTIFICACAO1" readonly></label>
+        <label>Identificação 2: <input type="text" id="IDENTIFICACAO2" readonly></label>
+        <label>Data do Romaneio: <input type="date" id="DATADOROMANEIO"></label>
+        <label>Qtd Enviada: <input type="text" id="QTDENVIADA"></label>
+        <label>Obs Romaneio: <input type="text" id="OBSROMANEIO"></label>
+        <label>Qtde: <input type="text" id="Qtde" readonly></label>
+        <label>Saldo: <input type="text" id="Saldo" readonly></label>
+        <button class="save-btn" onclick="saveEdit()">Salvar</button>
+        <button class="close-btn" onclick="closeModal()">Fechar</button>
+    </div>
+
+    <script>
+        let data = [];
+        let filteredData = [];
+        let columnIndexes = {};
+        let editedRows = new Set();
+        let qrScanner;
+
+        const hiddenColumns = [
+    "SERVIÇO", "LOCAL FABRICAÇÃO", "TR / CJ", "IDENTIFICAÇÃO", "REV",
+    "ESPEC EXECUTANTE FAB", "DATA PROG FAB", "REQ FAB", "PROG MONT",
+    "DATA PROG MONT", "REQ MONT", "ROMANEIOS", "DATA ÚLTIMO ROM",
+    "DIÂM MIN", "DIÂM MAX", "LINHA", "FLUÍDO", "CLASSE PRESSÃO",
+    "STH", "SOP", "SUB SOP", "CORTE/BISEL", "JUNTAS PIPE",
+    "JUNTAS CAMPO", "TOTAL JUNTAS", "LIB. VA FAB", "LIB. SOLDA FAB",
+    "LIB. VS FAB", "LIB. LP/PM FAB", "LIB. RX/US FAB", "LIB. VA MONT",
+    "LIB. SOLDA MONT", "LIB. VS MONT", "LIB. LP/PM MONT", "LIB. RX/US MONT",
+    "FABRICAÇÃO", "MONTAGEM", "OBSERVAÇÃO DO SPOOL", "OBSERVAÇÃO DO ISOMÉTRICO",
+    "STATUS", "DATA DIM FAB", "REL DMF", "INSP DMF", "DATA DIM CAMPO",
+    "REL DMC", "INSP DMC", "Rel TH Fab", "Rel TH", "COND PINT",
+    "REL PINT 1 F", "DATA 1ª F.", "REL PINT 2 F", "DATA 2ª F.",
+    "REL PINT 1 A", "DATA 1ª A.", "REL PINT 2 A", "DATA 2ª A.",
+    "DECAP. FAB", "DATA DECAP. FAB", "RETOQUE / DECAP. MONT.",
+    "DATA RETOQUE / DECAP. MONT.", "DIÂM. NOMINAL", "SCH", "ÁREA SUPERF.",
+    "COMPRIMENTO", "Data Cadastro", "ID_ISOMETRICO", "ID_SPOOL", "ÁREA",
+    "MATERIAL"
+        ];
+
+        // Função para confirmar a atualização do arquivo
+        function confirmUpdate() {
+            const selectedFile = document.getElementById("fileList").value;
+            if (!selectedFile) {
+                alert("Selecione um arquivo da lista para atualizar.");
+                return;
+            }
+
+            const confirmUpdate = confirm("Deseja realmente atualizar o arquivo? Todas as alterações não salvas serão perdidas.");
+            if (confirmUpdate) {
+                loadSelectedFile(selectedFile);
+            }
+        }
+
+        // Carrega o arquivo selecionado da lista
+        function loadSelectedFile(fileName) {
+            fetch(fileName)
+                .then(response => response.arrayBuffer())
+                .then(arrayBuffer => {
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array', cellFormula: true });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false });
+                    data = jsonData;
+                    localStorage.setItem("uploadedData", JSON.stringify(data));
+                    filteredData = data.slice(1);
+                    editedRows.clear();
+                    localStorage.removeItem("editedRows");
+                    findColumnIndexes();
+                    renderTable();
+                })
+                .catch(error => {
+                    console.error("Erro ao carregar o arquivo:", error);
+                });
+        }
+
+        // Função para formatar a data no formato "dia/mês/ano"
+        function formatDate(dateString) {
+            if (!dateString) return "";
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return "";
+            const day = String(date.getUTCDate()).padStart(2, "0");
+            const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+            const year = date.getUTCFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // Função para converter a data para o formato YYYY-MM-DD (usado pelo input type="date")
+        function formatDateForInput(dateString) {
+            if (!dateString) return "";
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return "";
+            const day = String(date.getUTCDate()).padStart(2, "0");
+            const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+            const year = date.getUTCFullYear();
+            return `${year}-${month}-${day}`;
+        }
+
+        // Encontra os índices das colunas
+        function findColumnIndexes() {
+            columnIndexes = {};
+            data[0].forEach((header, index) => {
+                columnIndexes[header.trim().toLowerCase()] = index;
+            });
+        }
+
+        // Renderiza a tabela
+        function renderTable() {
+            const table = document.getElementById("dataTable");
+            table.innerHTML = "";
+
+            if (!data.length) return;
+
+            const headerRow = table.insertRow();
+            data[0].forEach((header, colIndex) => {
+                if (!hiddenColumns.includes(header.trim().toLowerCase())) {
+                    const th = document.createElement("th");
+                    th.textContent = header;
+                    headerRow.appendChild(th);
+                }
+            });
+
+            filteredData.forEach((row, rowIndex) => {
+                const tr = table.insertRow();
+                const originalIndex = data.indexOf(row);
+                const dataRomaneio = row[columnIndexes["data do romaneio"]];
+
+                // Verifica se a data do romaneio está vazia
+                if (dataRomaneio && editedRows.has(originalIndex)) {
+                    tr.classList.add("edited-row");
+                }
+                tr.onclick = () => openEditModal(rowIndex);
+                row.forEach((cell, colIndex) => {
+                    if (!hiddenColumns.includes(data[0][colIndex].trim().toLowerCase())) {
+                        const td = tr.insertCell();
+                        let cellValue = cell || "N/A";
+                        if (data[0][colIndex].trim().toLowerCase() === "data do romaneio") {
+                            cellValue = formatDate(cellValue);
+                        }
+                        td.textContent = cellValue;
+                    }
+                });
+            });
+        }
+
+        // Abre o modal de edição
+        function openEditModal(index) {
+            const originalIndex = data.indexOf(filteredData[index]);
+            document.getElementById("editIndex").value = originalIndex;
+            document.getElementById("POSICAOTAG").value = filteredData[index][columnIndexes["posição / tag"]] || "N/A";
+            document.getElementById("IDENTIFICACAO1").value = filteredData[index][columnIndexes["identificação 1"]] || "N/A";
+            document.getElementById("IDENTIFICACAO2").value = filteredData[index][columnIndexes["identificação 2"]] || "N/A";
+            document.getElementById("DATADOROMANEIO").value = formatDateForInput(filteredData[index][columnIndexes["data do romaneio"]]);
+            document.getElementById("QTDENVIADA").value = filteredData[index][columnIndexes["qtd enviada"]] || "";
+            document.getElementById("OBSROMANEIO").value = filteredData[index][columnIndexes["obs romaneio"]] || "";
+            document.getElementById("Qtde").value = filteredData[index][columnIndexes["qtde"]] || "N/A";
+            document.getElementById("Saldo").value = filteredData[index][columnIndexes["saldo"]] || "N/A";
+
+            document.getElementById("editModal").style.display = "block";
+        }
+
+        // Salva as edições
+        function saveEdit() {
+            const originalIndex = parseInt(document.getElementById("editIndex").value);
+            if (originalIndex < 0) return;
+
+            const originalRow = data[originalIndex];
+            const editedRow = [
+                document.getElementById("DATADOROMANEIO").value,
+                document.getElementById("QTDENVIADA").value,
+                document.getElementById("OBSROMANEIO").value
+            ];
+
+            if (
+                originalRow[columnIndexes["data do romaneio"]] !== editedRow[0] ||
+                originalRow[columnIndexes["qtd enviada"]] !== editedRow[1] ||
+                originalRow[columnIndexes["obs romaneio"]] !== editedRow[2]
+            ) {
+                data[originalIndex][columnIndexes["data do romaneio"]] = editedRow[0];
+                data[originalIndex][columnIndexes["qtd enviada"]] = editedRow[1];
+                data[originalIndex][columnIndexes["obs romaneio"]] = editedRow[2];
+
+                editedRows.add(originalIndex);
+                localStorage.setItem("uploadedData", JSON.stringify(data));
+                localStorage.setItem("editedRows", JSON.stringify(Array.from(editedRows)));
+            }
+
+            document.getElementById("editModal").style.display = "none";
+            renderTable();
+        }
+
+        // Fecha o modal
+        function closeModal() {
+            document.getElementById("editModal").style.display = "none";
+        }
+
+        // Inicia o scanner de QR Code
+        function startQrScanner() {
+            document.getElementById("qr-container").style.display = "block";
+            document.getElementById("closeScannerBtn").style.display = "block";
+
+            qrScanner = new Html5Qrcode("qr-reader");
+            qrScanner.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: 250
+                },
+                (decodedText, decodedResult) => {
+                    document.getElementById("identificacaoFilter").value = decodedText;
+                    applyFilter();
+                    stopQrScanner();
+                },
+                (errorMessage) => {
+                    console.error(errorMessage);
+                }
+            ).catch((err) => {
+                console.error(err);
+            });
+        }
+
+        // Para o scanner de QR Code
+        function stopQrScanner() {
+            if (qrScanner) {
+                qrScanner.stop().then(() => {
+                    document.getElementById("qr-container").style.display = "none";
+                    document.getElementById("closeScannerBtn").style.display = "none";
+                }).catch((err) => {
+                    console.error(err);
+                });
+            }
+        }
+
+        // Aplica o filtro na tabela
+        function applyFilter() {
+            const filterValue = document.getElementById("identificacaoFilter").value.toLowerCase();
+            filteredData = data.slice(1).filter(row => {
+                return row.some(cell => cell.toString().toLowerCase().includes(filterValue));
+            });
+            renderTable();
+        }
+
+ function downloadExcel() {
+    if (!data.length) {
+        alert("Nenhum dado carregado para exportar.");
+        return;
+    }
+
+    // Criar uma cópia da tabela com os cálculos corrigidos
+    let newData = data.map((row, index) => {
+        if (index === 0) {
+            // Trocar a posição das colunas "DATA DO ROMANEIO" e "OBSERVAÇÃO"
+            let headers = [...row];
+            [headers[columnIndexes["data do romaneio"]], headers[columnIndexes["observação"]]] =
+                [headers[columnIndexes["observação"]], headers[columnIndexes["data do romaneio"]]];
+            return headers;
+        }
+
+        let qtdEnviada = parseFloat(row[columnIndexes["qtd enviada"]]?.toString().replace(",", "."));
+        let pesoKg = parseFloat(row[columnIndexes["peso (kg)"]]?.toString().replace(",", ".")) || 0;
+        let areaSuperficie = parseFloat(row[columnIndexes["área superfície"]]?.toString().replace(",", ".")) || 0;
+
+        if (!isNaN(qtdEnviada) && qtdEnviada > 0) {
+            row[columnIndexes["peso unitário"]] = (pesoKg / qtdEnviada).toFixed(2).replace(".", ",");
+            row[columnIndexes["area m² unitário"]] = (areaSuperficie / qtdEnviada).toFixed(2).replace(".", ",");
+            row[columnIndexes["qtd enviada"]] = qtdEnviada.toLocaleString("pt-BR");
+        }
+
+        row[columnIndexes["peso (kg)"]] = row[columnIndexes["peso (kg)"]]?.toString().replace(".", ",");
+        row[columnIndexes["área superfície"]] = row[columnIndexes["área superfície"]]?.toString().replace(".", ",");
+
+        Object.entries(columnIndexes).forEach(([colName, colIndex]) => {
+            if (colName.includes("data")) {
+                let dateValue = row[colIndex];
+                if (dateValue && !isNaN(new Date(dateValue))) {
+                    let dateObj = new Date(dateValue);
+                    dateObj.setDate(dateObj.getDate() + 1); // Corrigir data para evitar um dia a menos
+                    row[colIndex] = dateObj.toLocaleDateString("pt-BR");
+                }
+            }
+        });
+
+        // Trocar a posição das colunas "DATA DO ROMANEIO" e "OBSERVAÇÃO" nos dados
+        [row[columnIndexes["data do romaneio"]], row[columnIndexes["observação"]]] =
+            [row[columnIndexes["observação"]], row[columnIndexes["data do romaneio"]]];
+
+        return row;
+    });
+
+    // Criar a planilha
+    const updatedSheet = XLSX.utils.aoa_to_sheet(newData);
+
+    // Ajuste automático da largura das colunas
+    updatedSheet["!cols"] = newData[0].map((_, index) => {
+        let maxLength = Math.max(...newData.map(row => (row[index] ? row[index].toString().length : 0)));
+        return { wch: maxLength + 2 };
+    });
+
+    // Criar e baixar o arquivo Excel
+    const newWorkbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(newWorkbook, updatedSheet, "Planilha1");
+    XLSX.writeFile(newWorkbook, "romaneio.xlsx");
+}
+
+
+        // Carrega o arquivo ao iniciar
+        document.addEventListener("DOMContentLoaded", () => {
+            const storedData = localStorage.getItem("uploadedData");
+            if (storedData) {
+                data = JSON.parse(storedData);
+                filteredData = data.slice(1);
+                findColumnIndexes();
+                renderTable();
+            }
+
+            const storedEditedRows = localStorage.getItem("editedRows");
+            if (storedEditedRows) {
+                editedRows = new Set(JSON.parse(storedEditedRows));
+                renderTable();
+            }
+        });
+    </script>
+</body>
+</html>
