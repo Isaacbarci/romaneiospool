@@ -127,7 +127,7 @@
         .edited-row {
             background-color: lightblue !important;
         }
-  </style>
+    </style>
 </head>
 <body>
     <h2>ROMANEIO DE SPOOL</h2>
@@ -147,7 +147,10 @@
     </div>
 
     <div class="table-container">
-        <table id="dataTable"></table>
+        <table id="dataTable">
+            <thead></thead>
+            <tbody></tbody>
+        </table>
     </div>
 
     <div id="editModal" class="modal">
@@ -275,11 +278,17 @@
 
         function renderTable() {
             const table = document.getElementById("dataTable");
-            table.innerHTML = "";
+            const thead = table.querySelector("thead");
+            const tbody = table.querySelector("tbody");
+
+            // Limpa a tabela
+            thead.innerHTML = "";
+            tbody.innerHTML = "";
 
             if (!data.length) return;
 
-            const headerRow = table.insertRow();
+            // Renderiza o cabeçalho
+            const headerRow = document.createElement("tr");
             data[0].forEach((header, colIndex) => {
                 if (!hiddenColumns.includes(header.trim().toLowerCase())) {
                     const th = document.createElement("th");
@@ -287,9 +296,11 @@
                     headerRow.appendChild(th);
                 }
             });
+            thead.appendChild(headerRow);
 
+            // Renderiza as linhas visíveis
             filteredData.forEach((row, rowIndex) => {
-                const tr = table.insertRow();
+                const tr = document.createElement("tr");
                 const originalIndex = data.indexOf(row);
                 const dataRomaneio = row[columnIndexes["data do romaneio"]];
 
@@ -299,14 +310,16 @@
                 tr.onclick = () => openEditModal(rowIndex);
                 row.forEach((cell, colIndex) => {
                     if (!hiddenColumns.includes(data[0][colIndex].trim().toLowerCase())) {
-                        const td = tr.insertCell();
+                        const td = document.createElement("td");
                         let cellValue = cell || "N/A";
                         if (data[0][colIndex].trim().toLowerCase() === "data do romaneio") {
                             cellValue = formatDate(cellValue);
                         }
                         td.textContent = cellValue;
+                        tr.appendChild(td);
                     }
                 });
+                tbody.appendChild(tr);
             });
         }
 
