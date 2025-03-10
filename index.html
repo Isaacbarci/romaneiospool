@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Romaneio de Spool</title>
+    <title>Romaneio de Suporte</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
@@ -53,13 +53,11 @@
         .table-container {
             width: 100%;
             overflow-x: auto;
-            overflow-y: hidden;
             margin-top: 20px;
         }
         table {
             border-collapse: collapse;
-            width: max-content;
-            min-width: 100%;
+            width: 100%;
             background-color: white;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             border: 2px solid black;
@@ -74,7 +72,6 @@
         th {
             background-color: #007BFF;
             color: white;
-            text-align: left;
         }
         td {
             cursor: pointer;
@@ -127,6 +124,19 @@
         .edited-row {
             background-color: lightblue !important;
         }
+        .pagination {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .pagination button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .pagination button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -153,6 +163,12 @@
         </table>
     </div>
 
+    <div class="pagination">
+        <button id="prevPage" onclick="changePage(-1)">Anterior</button>
+        <span id="pageInfo">Página 1 de 1</span>
+        <button id="nextPage" onclick="changePage(1)">Próxima</button>
+    </div>
+
     <div id="editModal" class="modal">
         <input type="hidden" id="editIndex">
         <label>ISOMÉTRICO: <input type="text" id="ISOMETRICO" readonly></label>
@@ -171,6 +187,8 @@
         let columnIndexes = {};
         let editedRows = new Set();
         let qrScanner;
+        let currentPage = 1;
+        const itemsPerPage = 1000; // Itens por página
 
         const hiddenColumns = [
             "SERVIÇO", "LOCAL FABRICAÇÃO", "TR / CJ", "IDENTIFICAÇÃO", "REV",
@@ -241,7 +259,11 @@
                     filteredData = data.slice(1);
                     editedRows.clear();
                     findColumnIndexes();
+                    currentPage = 1; // Reinicia a paginação
                     renderTable();
+                    updatePagination();
+                    saveToLocalStorage("uploadedData", data);
+                    saveToLocalStorage("editedRows", Array.from(editedRows));
                 })
                 .catch(error => {
                     console.error("Erro ao carregar o arquivo:", error);
@@ -298,8 +320,12 @@
             });
             thead.appendChild(headerRow);
 
-            // Renderiza as linhas visíveis
-            filteredData.forEach((row, rowIndex) => {
+            // Renderiza os itens da página atual
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = filteredData.slice(startIndex, endIndex);
+
+            pageData.forEach((row, rowIndex) => {
                 const tr = document.createElement("tr");
                 const originalIndex = data.indexOf(row);
                 const dataRomaneio = row[columnIndexes["data do romaneio"]];
@@ -307,7 +333,7 @@
                 if (dataRomaneio && editedRows.has(originalIndex)) {
                     tr.classList.add("edited-row");
                 }
-                tr.onclick = () => openEditModal(rowIndex);
+                tr.onclick = () => openEditModal(startIndex + rowIndex);
                 row.forEach((cell, colIndex) => {
                     if (!hiddenColumns.includes(data[0][colIndex].trim().toLowerCase())) {
                         const td = document.createElement("td");
@@ -321,6 +347,24 @@
                 });
                 tbody.appendChild(tr);
             });
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            document.getElementById("pageInfo").textContent = `Página ${currentPage} de ${totalPages}`;
+            document.getElementById("prevPage").disabled = currentPage === 1;
+            document.getElementById("nextPage").disabled = currentPage === totalPages;
+        }
+
+        function changePage(delta) {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            const newPage = currentPage + delta;
+
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                renderTable();
+                updatePagination();
+            }
         }
 
         function openEditModal(index) {
@@ -354,6 +398,8 @@
                 data[originalIndex][columnIndexes["obs romaneio"]] = editedRow[1];
 
                 editedRows.add(originalIndex);
+                saveToLocalStorage("uploadedData", data);
+                saveToLocalStorage("editedRows", Array.from(editedRows));
             }
 
             document.getElementById("editModal").style.display = "none";
@@ -405,7 +451,9 @@
                 const isometrico = row[columnIndexes["isométrico"]]?.toString().toLowerCase();
                 return isometrico?.includes(filterValue) || row.some(cell => cell.toString().toLowerCase().includes(filterValue));
             });
+            currentPage = 1; // Reinicia a paginação ao aplicar o filtro
             renderTable();
+            updatePagination();
         }
 
         function downloadOriginal() {
@@ -432,6 +480,33 @@
                 });
         }
 
+        // Funções para compressão e descompressão de dados
+        function compressData(data) {
+            return btoa(JSON.stringify(data));
+        }
+
+        function decompressData(compressedData) {
+            return JSON.parse(atob(compressedData));
+        }
+
+        function saveToLocalStorage(key, data) {
+            try {
+                const compressedData = compressData(data);
+                localStorage.setItem(key, compressedData);
+            } catch (error) {
+                console.error("Erro ao salvar no localStorage:", error);
+                alert("Erro ao salvar os dados. O arquivo pode ser muito grande.");
+            }
+        }
+
+        function loadFromLocalStorage(key) {
+            const compressedData = localStorage.getItem(key);
+            if (compressedData) {
+                return decompressData(compressedData);
+            }
+            return null;
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             // Carrega os dados do localStorage (se existirem)
             const storedData = loadFromLocalStorage("uploadedData");
@@ -439,7 +514,9 @@
                 data = storedData;
                 filteredData = data.slice(1);
                 findColumnIndexes();
+                currentPage = 1;
                 renderTable();
+                updatePagination();
             }
 
             const storedEditedRows = loadFromLocalStorage("editedRows");
