@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -128,7 +127,7 @@
  </style>
 </head>
 <body>
-<h2>ROMANEIO DE SPOOL</h2>
+    <h2>ROMANEIO DE SPOOL</h2>
     <select id="fileList">
         <option value="">Selecione um arquivo</option>
         <option value="Patio de Madeira.xlsx">Patio de Madeira</option>
@@ -136,7 +135,7 @@
     </select>
     <button onclick="confirmUpdate()">Atualizar Arquivo</button>
     <input type="text" id="identificacaoFilter" placeholder="Filtrar por ISOMÉTRICO ou QR Code">
-<button onclick="downloadExcel()">Download do Excel Atualizado</button>
+    <button onclick="downloadOriginal()">Download do Arquivo Original</button>
     <button onclick="startQrScanner()">Escanear QR Code</button>
 
     <div id="qr-container" style="display: none;">
@@ -410,31 +409,12 @@
             renderTable();
         }
 
-        function downloadExcel() {
-    if (data.length === 0) {
-        alert("Nenhum dado disponível para exportar.");
-        return;
-    }
-
-    // Cria uma nova planilha com os dados atualizados
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Romaneio de Spool");
-
-    // Gera o arquivo Excel
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-
-    // Cria um link para download
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "Romaneio_Atualizado.xlsx";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-}
+        function downloadOriginal() {
+            const selectedFile = document.getElementById("fileList").value;
+            if (!selectedFile) {
+                alert("Selecione um arquivo da lista para fazer o download.");
+                return;
+            }
 
             fetch(selectedFile)
                 .then(response => response.blob())
