@@ -429,6 +429,8 @@
                     const month = String(date.getMonth() + 1).padStart(2, "0");
                     const year = date.getFullYear();
                     row[dataRomaneioIndex] = `${day}/${month}/${year}`;
+                } else {
+                    row[dataRomaneioIndex] = ""; // Caso a data seja inválida
                 }
             }
         });
@@ -439,14 +441,14 @@
     const pesoIndex = columnIndexes["peso"];
     if (areaSuperfIndex !== undefined) {
         dataCopy.slice(1).forEach(row => {
-            if (row[areaSuperfIndex]) {
+            if (row[areaSuperfIndex] && typeof row[areaSuperfIndex] === "number") {
                 row[areaSuperfIndex] = String(row[areaSuperfIndex]).replace(".", ",");
             }
         });
     }
     if (pesoIndex !== undefined) {
         dataCopy.slice(1).forEach(row => {
-            if (row[pesoIndex]) {
+            if (row[pesoIndex] && typeof row[pesoIndex] === "number") {
                 row[pesoIndex] = String(row[pesoIndex]).replace(".", ",");
             }
         });
