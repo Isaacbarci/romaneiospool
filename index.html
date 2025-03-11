@@ -262,53 +262,66 @@
         }
 
         function renderTable() {
-            const table = document.getElementById("dataTable");
-            const thead = table.querySelector("thead");
-            const tbody = table.querySelector("tbody");
+    const table = document.getElementById("dataTable");
+    const thead = table.querySelector("thead");
+    const tbody = table.querySelector("tbody");
 
-            // Limpa a tabela
-            thead.innerHTML = "";
-            tbody.innerHTML = "";
+    // Limpa a tabela
+    thead.innerHTML = "";
+    tbody.innerHTML = "";
 
-            if (!data.length) return;
+    if (!data.length) return;
 
-            // Renderiza o cabeçalho
-            const headerRow = document.createElement("tr");
-            data[0].forEach((header, colIndex) => {
-                if (!hiddenColumns.includes(header.trim().toLowerCase())) {
-                    const th = document.createElement("th");
-                    th.textContent = header;
-                    headerRow.appendChild(th);
-                }
-            });
-            thead.appendChild(headerRow);
+    // Identifica os índices das colunas a serem ocultadas
+    findColumnIndexes();
+    const hiddenColumnIndexes = new Set();
 
-            // Renderiza os itens da página atual
-            const pageData = filteredData.slice(0, itemsPerPage);
-
-            pageData.forEach((row, rowIndex) => {
-                const tr = document.createElement("tr");
-                const originalIndex = data.indexOf(row);
-                const dataRomaneio = row[columnIndexes["data do romaneio"]];
-
-                if (dataRomaneio && editedRows.has(originalIndex)) {
-                    tr.classList.add("edited-row");
-                }
-                tr.onclick = () => openEditModal(rowIndex);
-                row.forEach((cell, colIndex) => {
-                    if (!hiddenColumns.includes(data[0][colIndex].trim().toLowerCase())) {
-                        const td = document.createElement("td");
-                        let cellValue = cell || "N/A";
-                        if (data[0][colIndex].trim().toLowerCase() === "data do romaneio") {
-                            cellValue = formatDate(cellValue);
-                        }
-                        td.textContent = cellValue;
-                        tr.appendChild(td);
-                    }
-                });
-                tbody.appendChild(tr);
-            });
+    data[0].forEach((header, colIndex) => {
+        const cleanHeader = header.trim().toUpperCase(); // Remove espaços extras e padroniza maiúsculas
+        if (hiddenColumns.includes(cleanHeader)) {
+            hiddenColumnIndexes.add(colIndex);
         }
+    });
+
+    // Renderiza o cabeçalho
+    const headerRow = document.createElement("tr");
+    data[0].forEach((header, colIndex) => {
+        if (!hiddenColumnIndexes.has(colIndex)) { // Verifica se a coluna deve ser exibida
+            const th = document.createElement("th");
+            th.textContent = header;
+            headerRow.appendChild(th);
+        }
+    });
+    thead.appendChild(headerRow);
+
+    // Renderiza os itens da página atual
+    const pageData = filteredData.slice(0, itemsPerPage);
+
+    pageData.forEach((row, rowIndex) => {
+        const tr = document.createElement("tr");
+        const originalIndex = data.indexOf(row);
+        const dataRomaneio = row[columnIndexes["data do romaneio"]];
+
+        if (dataRomaneio && editedRows.has(originalIndex)) {
+            tr.classList.add("edited-row");
+        }
+
+        tr.onclick = () => openEditModal(rowIndex);
+        row.forEach((cell, colIndex) => {
+            if (!hiddenColumnIndexes.has(colIndex)) { // Oculta as colunas especificadas
+                const td = document.createElement("td");
+                let cellValue = cell || "N/A";
+                if (data[0][colIndex].trim().toLowerCase() === "data do romaneio") {
+                    cellValue = formatDate(cellValue);
+                }
+                td.textContent = cellValue;
+                tr.appendChild(td);
+            }
+        });
+        tbody.appendChild(tr);
+    });
+}
+
 
         function openEditModal(index) {
             const originalIndex = data.indexOf(filteredData[index]);
