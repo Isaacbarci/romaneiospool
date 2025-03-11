@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Romaneio de Suporte</title>
+    <title>Romaneio de Spool</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
@@ -169,10 +169,11 @@
         let qrScanner;
         const itemsPerPage = 500; // Itens por página
 
-        // Colunas a serem ocultas na tabela principal
         const hiddenColumns = [
-            "ÁREA", "MATERIAL", "PESO", "OBS ROMANEIO", "ID_SPOOL", "PROG FAB"
-        ];
+    "ÁREA", "REV", "MATERIAL", "PROG FAB", "EXECUTANTE FAB",
+    "PESO", "LINHA", "COND PINT", "DIÂM. NOMINAL",
+    "ÁREA SUPERF.", "OBS ROMANEIO", "ID_SPOOL"
+];
 
         // Função debounce para melhorar o desempenho do filtro
         function debounce(func, wait) {
