@@ -409,49 +409,22 @@
             renderTable();
         }
 
-  function downloadExcel() {
+    function downloadExcel() {
     if (data.length === 0) {
         alert("Nenhum dado disponível para exportar.");
         return;
     }
 
-    // Criar uma cópia dos dados formatados antes da exportação
-    const formattedData = data.map((row, rowIndex) => {
-        if (rowIndex === 0) return row; // Mantém o cabeçalho original
-
-        return row.map((cell, colIndex) => {
-            let header = data[0][colIndex].trim().toLowerCase();
-
-            // Formatar DATA DO ROMANEIO no formato dia/mês/ano
-            if (header === "data do romaneio") {
-                return formatDate(cell);
-            }
-
-            // Substituir pontos por vírgulas em PESO e ÁREA SUPERF.
-            if (header === "peso" || header === "área superf.") {
-                return cell.toString().replace(".", ",");
-            }
-
-            return cell;
-        });
-    });
-
-    // Criar planilha e autoajustar colunas
-    const worksheet = XLSX.utils.aoa_to_sheet(formattedData);
+    // Cria uma nova planilha com os dados atualizados
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Romaneio de Spool");
 
-    // Ajuste automático da largura das colunas
-    const colWidths = formattedData[0].map((_, i) => ({
-        wch: Math.max(...formattedData.map(row => (row[i] ? row[i].toString().length : 10))) + 2
-    }));
-    worksheet["!cols"] = colWidths;
-
-    // Criar o arquivo Excel
+    // Gera o arquivo Excel
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
 
-    // Criar link para download
+    // Cria um link para download
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -461,7 +434,6 @@
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
 }
-
 
             fetch(selectedFile)
                 .then(response => response.blob())
