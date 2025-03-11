@@ -409,70 +409,49 @@
             renderTable();
         }
 
-      function downloadExcel() {
+  function downloadExcel() {
     if (data.length === 0) {
         alert("Nenhum dado disponível para exportar.");
         return;
     }
 
-    // Cria uma cópia dos dados para evitar modificar o original
-    const dataCopy = data.map(row => [...row]);
+    // Criar uma cópia dos dados formatados antes da exportação
+    const formattedData = data.map((row, rowIndex) => {
+        if (rowIndex === 0) return row; // Mantém o cabeçalho original
 
-    // Formata a coluna "DATA DO ROMANEIO" para o formato dia/mês/ano com fuso horário local
-    const dataRomaneioIndex = columnIndexes["data do romaneio"];
-    if (dataRomaneioIndex !== undefined) {
-        dataCopy.slice(1).forEach(row => {
-            if (row[dataRomaneioIndex]) {
-                const date = new Date(row[dataRomaneioIndex]);
-                if (!isNaN(date.getTime())) {
-                    const day = String(date.getDate()).padStart(2, "0");
-                    const month = String(date.getMonth() + 1).padStart(2, "0");
-                    const year = date.getFullYear();
-                    row[dataRomaneioIndex] = `${day}/${month}/${year}`;
-                } else {
-                    row[dataRomaneioIndex] = ""; // Caso a data seja inválida
-                }
-            }
-        });
-    }
+        return row.map((cell, colIndex) => {
+            let header = data[0][colIndex].trim().toLowerCase();
 
-    // Substitui ponto por vírgula nas colunas "ÁREA SUPERF." e "PESO"
-    const areaSuperfIndex = columnIndexes["área superf."];
-    const pesoIndex = columnIndexes["peso"];
-    if (areaSuperfIndex !== undefined) {
-        dataCopy.slice(1).forEach(row => {
-            if (row[areaSuperfIndex] && typeof row[areaSuperfIndex] === "number") {
-                row[areaSuperfIndex] = String(row[areaSuperfIndex]).replace(".", ",");
+            // Formatar DATA DO ROMANEIO no formato dia/mês/ano
+            if (header === "data do romaneio") {
+                return formatDate(cell);
             }
-        });
-    }
-    if (pesoIndex !== undefined) {
-        dataCopy.slice(1).forEach(row => {
-            if (row[pesoIndex] && typeof row[pesoIndex] === "number") {
-                row[pesoIndex] = String(row[pesoIndex]).replace(".", ",");
-            }
-        });
-    }
 
-    // Cria uma nova planilha com os dados atualizados
-    const worksheet = XLSX.utils.aoa_to_sheet(dataCopy);
+            // Substituir pontos por vírgulas em PESO e ÁREA SUPERF.
+            if (header === "peso" || header === "área superf.") {
+                return cell.toString().replace(".", ",");
+            }
+
+            return cell;
+        });
+    });
+
+    // Criar planilha e autoajustar colunas
+    const worksheet = XLSX.utils.aoa_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Romaneio de Spool");
 
-    // Autoajusta as colunas
-    const colWidths = dataCopy[0].map((_, colIndex) => {
-        const maxLength = Math.max(
-            ...dataCopy.map(row => (row[colIndex] ? String(row[colIndex]).length : 0)
-        );
-        return { wch: maxLength + 2 }; // Adiciona um pequeno espaço extra
-    });
+    // Ajuste automático da largura das colunas
+    const colWidths = formattedData[0].map((_, i) => ({
+        wch: Math.max(...formattedData.map(row => (row[i] ? row[i].toString().length : 10))) + 2
+    }));
     worksheet["!cols"] = colWidths;
 
-    // Gera o arquivo Excel
+    // Criar o arquivo Excel
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
 
-    // Cria um link para download
+    // Criar link para download
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -482,6 +461,24 @@
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
 }
+
+
+            fetch(selectedFile)
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = selectedFile;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    console.error("Erro ao fazer o download do arquivo:", error);
+                });
+        }
 
         // Funções para compressão e descompressão de dados
         function compressData(data) {
