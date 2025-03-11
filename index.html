@@ -415,10 +415,56 @@
         return;
     }
 
+    // Cria uma cópia dos dados para evitar modificar o original
+    const dataCopy = data.map(row => [...row]);
+
+    // Formata a coluna "DATA DO ROMANEIO" para o formato dia/mês/ano com fuso horário local
+    const dataRomaneioIndex = columnIndexes["data do romaneio"];
+    if (dataRomaneioIndex !== undefined) {
+        dataCopy.slice(1).forEach(row => {
+            if (row[dataRomaneioIndex]) {
+                const date = new Date(row[dataRomaneioIndex]);
+                if (!isNaN(date.getTime())) {
+                    const day = String(date.getDate()).padStart(2, "0");
+                    const month = String(date.getMonth() + 1).padStart(2, "0");
+                    const year = date.getFullYear();
+                    row[dataRomaneioIndex] = `${day}/${month}/${year}`;
+                }
+            }
+        });
+    }
+
+    // Substitui ponto por vírgula nas colunas "ÁREA SUPERF." e "PESO"
+    const areaSuperfIndex = columnIndexes["área superf."];
+    const pesoIndex = columnIndexes["peso"];
+    if (areaSuperfIndex !== undefined) {
+        dataCopy.slice(1).forEach(row => {
+            if (row[areaSuperfIndex]) {
+                row[areaSuperfIndex] = String(row[areaSuperfIndex]).replace(".", ",");
+            }
+        });
+    }
+    if (pesoIndex !== undefined) {
+        dataCopy.slice(1).forEach(row => {
+            if (row[pesoIndex]) {
+                row[pesoIndex] = String(row[pesoIndex]).replace(".", ",");
+            }
+        });
+    }
+
     // Cria uma nova planilha com os dados atualizados
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    const worksheet = XLSX.utils.aoa_to_sheet(dataCopy);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Romaneio de Spool");
+
+    // Autoajusta as colunas
+    const colWidths = dataCopy[0].map((_, colIndex) => {
+        const maxLength = Math.max(
+            ...dataCopy.map(row => (row[colIndex] ? String(row[colIndex]).length : 0)
+        );
+        return { wch: maxLength + 2 }; // Adiciona um pequeno espaço extra
+    });
+    worksheet["!cols"] = colWidths;
 
     // Gera o arquivo Excel
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
