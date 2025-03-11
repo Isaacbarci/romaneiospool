@@ -124,7 +124,7 @@
         .edited-row {
             background-color: lightblue !important;
         }
-     </style>
+ </style>
 </head>
 <body>
     <h2>ROMANEIO DE SPOOL</h2>
@@ -169,24 +169,9 @@
         let qrScanner;
         const itemsPerPage = 500; // Itens por página
 
+        // Colunas a serem ocultas na tabela principal
         const hiddenColumns = [
-            "SERVIÇO", "LOCAL FABRICAÇÃO", "TR / CJ", "IDENTIFICAÇÃO", "REV",
-            "ESPEC EXECUTANTE FAB", "DATA PROG FAB", "REQ FAB", "PROG MONT",
-            "DATA PROG MONT", "REQ MONT", "ROMANEIOS", "DATA ÚLTIMO ROM",
-            "DIÂM MIN", "DIÂM MAX", "LINHA", "FLUÍDO", "CLASSE PRESSÃO",
-            "STH", "SOP", "SUB SOP", "CORTE/BISEL", "JUNTAS PIPE",
-            "JUNTAS CAMPO", "TOTAL JUNTAS", "LIB. VA FAB", "LIB. SOLDA FAB",
-            "LIB. VS FAB", "LIB. LP/PM FAB", "LIB. RX/US FAB", "LIB. VA MONT",
-            "LIB. SOLDA MONT", "LIB. VS MONT", "LIB. LP/PM MONT", "LIB. RX/US MONT",
-            "FABRICAÇÃO", "MONTAGEM", "OBSERVAÇÃO DO SPOOL", "OBSERVAÇÃO DO ISOMÉTRICO",
-            "STATUS", "DATA DIM FAB", "REL DMF", "INSP DMF", "DATA DIM CAMPO",
-            "REL DMC", "INSP DMC", "Rel TH Fab", "Rel TH", "COND PINT",
-            "REL PINT 1 F", "DATA 1ª F.", "REL PINT 2 F", "DATA 2ª F.",
-            "REL PINT 1 A", "DATA 1ª A.", "REL PINT 2 A", "DATA 2ª A.",
-            "DECAP. FAB", "DATA DECAP. FAB", "RETOQUE / DECAP. MONT.",
-            "DATA RETOQUE / DECAP. MONT.", "DIÂM. NOMINAL", "SCH", "ÁREA SUPERF.",
-            "COMPRIMENTO", "Data Cadastro", "ID_ISOMETRICO", "ID_SPOOL", "ÁREA",
-            "MATERIAL", "PESO" // Colunas a serem ocultas
+            "ÁREA", "MATERIAL", "PESO", "OBS ROMANEIO", "ID_SPOOL", "PROG FAB"
         ];
 
         // Função debounce para melhorar o desempenho do filtro
