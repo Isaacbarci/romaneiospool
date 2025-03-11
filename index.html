@@ -154,7 +154,7 @@
         <input type="hidden" id="editIndex">
         <label>ISOMÉTRICO: <input type="text" id="ISOMETRICO" readonly></label>
         <label>SPOOL: <input type="text" id="SPOOL" readonly></label>
-        <label>AREA: <input type="text" id="AREA" readonly></label>
+        <label>ÁREA: <input type="text" id="AREA" readonly></label>
         <label>PROG FAB: <input type="text" id="PROGFAB" readonly></label>
         <label>Data do Romaneio: <input type="date" id="DATADOROMANEIO"></label>
         <label>Obs Romaneio: <input type="text" id="OBSROMANEIO"></label>
@@ -329,7 +329,7 @@
             document.getElementById("editIndex").value = originalIndex;
             document.getElementById("ISOMETRICO").value = filteredData[index][columnIndexes["isométrico"]] || "N/A";
             document.getElementById("SPOOL").value = filteredData[index][columnIndexes["spool"]] || "N/A";
-           document.getElementById("AREA").value = filteredData[index][columnIndexes["AREA"]] || "N/A";
+            document.getElementById("AREA").value = filteredData[index][columnIndexes["ÁREA"]] || "N/A";
             document.getElementById("PROGFAB").value = filteredData[index][columnIndexes["prog fab"]] || "N/A";
             document.getElementById("DATADOROMANEIO").value = formatDateForInput(filteredData[index][columnIndexes["data do romaneio"]]);
             document.getElementById("OBSROMANEIO").value = filteredData[index][columnIndexes["obs romaneio"]] || "";
