@@ -130,7 +130,7 @@
     <h2>ROMANEIO DE SPOOL</h2>
     <select id="fileList">
         <option value="">Selecione um arquivo</option>
-        <option value="Patio de Madeira.xlsx">Patio de Madeira</option>
+        <option value="Compressores.xlsx">Compressores</option>
         <option value="Raizen.xlsx">Raizen</option>
     </select>
     <button onclick="confirmUpdate()">Atualizar Arquivo</button>
@@ -328,6 +328,7 @@
             document.getElementById("editIndex").value = originalIndex;
             document.getElementById("ISOMETRICO").value = filteredData[index][columnIndexes["isométrico"]] || "N/A";
             document.getElementById("SPOOL").value = filteredData[index][columnIndexes["spool"]] || "N/A";
+           document.getElementById("AREA").value = filteredData[index][columnIndexes["AREA"]] || "N/A";
             document.getElementById("PROGFAB").value = filteredData[index][columnIndexes["prog fab"]] || "N/A";
             document.getElementById("DATADOROMANEIO").value = formatDateForInput(filteredData[index][columnIndexes["data do romaneio"]]);
             document.getElementById("OBSROMANEIO").value = filteredData[index][columnIndexes["obs romaneio"]] || "";
