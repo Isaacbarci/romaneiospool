@@ -124,7 +124,7 @@
         .edited-row {
             background-color: lightblue !important;
         }
-    </style>
+     </style>
 </head>
 <body>
     <h2>ROMANEIO DE SPOOL</h2>
@@ -156,6 +156,7 @@
         <label>SPOOL: <input type="text" id="SPOOL" readonly></label>
         <label>PROG FAB: <input type="text" id="PROGFAB" readonly></label>
         <label>Data do Romaneio: <input type="date" id="DATADOROMANEIO"></label>
+        <label>Obs Romaneio: <input type="text" id="OBSROMANEIO"></label>
         <button class="save-btn" onclick="saveEdit()">Salvar</button>
         <button class="close-btn" onclick="closeModal()">Fechar</button>
     </div>
@@ -185,7 +186,7 @@
             "DECAP. FAB", "DATA DECAP. FAB", "RETOQUE / DECAP. MONT.",
             "DATA RETOQUE / DECAP. MONT.", "DIÂM. NOMINAL", "SCH", "ÁREA SUPERF.",
             "COMPRIMENTO", "Data Cadastro", "ID_ISOMETRICO", "ID_SPOOL", "ÁREA",
-            "MATERIAL", "PESO", "OBS ROMANEIO" // Colunas a serem ocultas
+            "MATERIAL", "PESO" // Colunas a serem ocultas
         ];
 
         // Função debounce para melhorar o desempenho do filtro
@@ -330,6 +331,7 @@
             document.getElementById("SPOOL").value = filteredData[index][columnIndexes["spool"]] || "N/A";
             document.getElementById("PROGFAB").value = filteredData[index][columnIndexes["prog fab"]] || "N/A";
             document.getElementById("DATADOROMANEIO").value = formatDateForInput(filteredData[index][columnIndexes["data do romaneio"]]);
+            document.getElementById("OBSROMANEIO").value = filteredData[index][columnIndexes["obs romaneio"]] || "";
 
             document.getElementById("editModal").style.display = "block";
         }
@@ -340,13 +342,16 @@
 
             const originalRow = data[originalIndex];
             const editedRow = [
-                document.getElementById("DATADOROMANEIO").value
+                document.getElementById("DATADOROMANEIO").value,
+                document.getElementById("OBSROMANEIO").value
             ];
 
             if (
-                originalRow[columnIndexes["data do romaneio"]] !== editedRow[0]
+                originalRow[columnIndexes["data do romaneio"]] !== editedRow[0] ||
+                originalRow[columnIndexes["obs romaneio"]] !== editedRow[1]
             ) {
                 data[originalIndex][columnIndexes["data do romaneio"]] = editedRow[0];
+                data[originalIndex][columnIndexes["obs romaneio"]] = editedRow[1];
 
                 editedRows.add(originalIndex);
                 saveToLocalStorage("uploadedData", data);
