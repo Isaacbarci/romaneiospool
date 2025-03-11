@@ -135,7 +135,7 @@
     </select>
     <button onclick="confirmUpdate()">Atualizar Arquivo</button>
     <input type="text" id="identificacaoFilter" placeholder="Filtrar por ISOMÉTRICO ou QR Code">
-   <button onclick="downloadExcel()">Download do Excel</button>
+    <button onclick="downloadExcel()">Download do Excel</button>
     <button onclick="startQrScanner()">Escanear QR Code</button>
 
     <div id="qr-container" style="display: none;">
@@ -171,10 +171,10 @@
         const itemsPerPage = 500; // Itens por página
 
         const hiddenColumns = [
-    "ÁREA", "REV", "MATERIAL", "PROG FAB", "EXECUTANTE FAB",
-    "PESO", "LINHA", "COND PINT", "DIÂM. NOMINAL",
-    "ÁREA SUPERF.", "OBS ROMANEIO", "ID_SPOOL"
-];
+            "ÁREA", "REV", "MATERIAL", "PROG FAB", "EXECUTANTE FAB",
+            "PESO", "LINHA", "COND PINT", "DIÂM. NOMINAL",
+            "ÁREA SUPERF.", "OBS ROMANEIO", "ID_SPOOL"
+        ];
 
         // Função debounce para melhorar o desempenho do filtro
         function debounce(func, wait) {
@@ -258,78 +258,79 @@
         function findColumnIndexes() {
             columnIndexes = {};
             data[0].forEach((header, index) => {
-                columnIndexes[header.trim().toLowerCase()] = index;
+                // Remove espaços extras e padroniza para minúsculas
+                const cleanHeader = header.trim().toLowerCase();
+                columnIndexes[cleanHeader] = index;
             });
         }
 
         function renderTable() {
-    const table = document.getElementById("dataTable");
-    const thead = table.querySelector("thead");
-    const tbody = table.querySelector("tbody");
+            const table = document.getElementById("dataTable");
+            const thead = table.querySelector("thead");
+            const tbody = table.querySelector("tbody");
 
-    // Limpa a tabela
-    thead.innerHTML = "";
-    tbody.innerHTML = "";
+            // Limpa a tabela
+            thead.innerHTML = "";
+            tbody.innerHTML = "";
 
-    if (!data.length) return;
+            if (!data.length) return;
 
-    // Identifica os índices das colunas a serem ocultadas
-    findColumnIndexes();
-    const hiddenColumnIndexes = new Set();
+            // Identifica os índices das colunas a serem ocultadas
+            findColumnIndexes();
+            const hiddenColumnIndexes = new Set();
 
-    data[0].forEach((header, colIndex) => {
-        const cleanHeader = header.trim().toUpperCase(); // Remove espaços extras e padroniza maiúsculas
-        if (hiddenColumns.includes(cleanHeader)) {
-            hiddenColumnIndexes.add(colIndex);
-        }
-    });
-
-    // Renderiza o cabeçalho
-    const headerRow = document.createElement("tr");
-    data[0].forEach((header, colIndex) => {
-        if (!hiddenColumnIndexes.has(colIndex)) { // Verifica se a coluna deve ser exibida
-            const th = document.createElement("th");
-            th.textContent = header;
-            headerRow.appendChild(th);
-        }
-    });
-    thead.appendChild(headerRow);
-
-    // Renderiza os itens da página atual
-    const pageData = filteredData.slice(0, itemsPerPage);
-
-    pageData.forEach((row, rowIndex) => {
-        const tr = document.createElement("tr");
-        const originalIndex = data.indexOf(row);
-        const dataRomaneio = row[columnIndexes["data do romaneio"]];
-
-        if (dataRomaneio && editedRows.has(originalIndex)) {
-            tr.classList.add("edited-row");
-        }
-
-        tr.onclick = () => openEditModal(rowIndex);
-        row.forEach((cell, colIndex) => {
-            if (!hiddenColumnIndexes.has(colIndex)) { // Oculta as colunas especificadas
-                const td = document.createElement("td");
-                let cellValue = cell || "N/A";
-                if (data[0][colIndex].trim().toLowerCase() === "data do romaneio") {
-                    cellValue = formatDate(cellValue);
+            data[0].forEach((header, colIndex) => {
+                const cleanHeader = header.trim().toUpperCase(); // Remove espaços extras e padroniza maiúsculas
+                if (hiddenColumns.includes(cleanHeader)) {
+                    hiddenColumnIndexes.add(colIndex);
                 }
-                td.textContent = cellValue;
-                tr.appendChild(td);
-            }
-        });
-        tbody.appendChild(tr);
-    });
-}
+            });
 
+            // Renderiza o cabeçalho
+            const headerRow = document.createElement("tr");
+            data[0].forEach((header, colIndex) => {
+                if (!hiddenColumnIndexes.has(colIndex)) { // Verifica se a coluna deve ser exibida
+                    const th = document.createElement("th");
+                    th.textContent = header;
+                    headerRow.appendChild(th);
+                }
+            });
+            thead.appendChild(headerRow);
+
+            // Renderiza os itens da página atual
+            const pageData = filteredData.slice(0, itemsPerPage);
+
+            pageData.forEach((row, rowIndex) => {
+                const tr = document.createElement("tr");
+                const originalIndex = data.indexOf(row);
+                const dataRomaneio = row[columnIndexes["data do romaneio"]];
+
+                if (dataRomaneio && editedRows.has(originalIndex)) {
+                    tr.classList.add("edited-row");
+                }
+
+                tr.onclick = () => openEditModal(rowIndex);
+                row.forEach((cell, colIndex) => {
+                    if (!hiddenColumnIndexes.has(colIndex)) { // Oculta as colunas especificadas
+                        const td = document.createElement("td");
+                        let cellValue = cell || "N/A";
+                        if (data[0][colIndex].trim().toLowerCase() === "data do romaneio") {
+                            cellValue = formatDate(cellValue);
+                        }
+                        td.textContent = cellValue;
+                        tr.appendChild(td);
+                    }
+                });
+                tbody.appendChild(tr);
+            });
+        }
 
         function openEditModal(index) {
             const originalIndex = data.indexOf(filteredData[index]);
             document.getElementById("editIndex").value = originalIndex;
             document.getElementById("ISOMETRICO").value = filteredData[index][columnIndexes["isométrico"]] || "N/A";
             document.getElementById("SPOOL").value = filteredData[index][columnIndexes["spool"]] || "N/A";
-            document.getElementById("AREA").value = filteredData[index][columnIndexes["ÁREA"]] || "N/A";
+            document.getElementById("AREA").value = filteredData[index][columnIndexes["área"]] || "N/A"; // Certifique-se de que "área" está em minúsculas
             document.getElementById("PROGFAB").value = filteredData[index][columnIndexes["prog fab"]] || "N/A";
             document.getElementById("DATADOROMANEIO").value = formatDateForInput(filteredData[index][columnIndexes["data do romaneio"]]);
             document.getElementById("OBSROMANEIO").value = filteredData[index][columnIndexes["obs romaneio"]] || "";
@@ -411,59 +412,58 @@
             renderTable();
         }
 
-   function downloadExcel() {
-    if (data.length === 0) {
-        alert("Nenhum dado disponível para exportar.");
-        return;
-    }
-
-    // Criar uma cópia dos dados formatados antes da exportação
-    const formattedData = data.map((row, rowIndex) => {
-        if (rowIndex === 0) return row; // Mantém o cabeçalho original
-
-        return row.map((cell, colIndex) => {
-            let header = data[0][colIndex].trim().toLowerCase();
-
-            // Formatar DATA DO ROMANEIO no formato dia/mês/ano
-            if (header === "data do romaneio") {
-                return formatDate(cell);
+        function downloadExcel() {
+            if (data.length === 0) {
+                alert("Nenhum dado disponível para exportar.");
+                return;
             }
 
-            // Substituir pontos por vírgulas em PESO e ÁREA SUPERF.
-            if (header === "peso" || header === "área superf.") {
-                return cell.toString().replace(".", ",");
-            }
+            // Criar uma cópia dos dados formatados antes da exportação
+            const formattedData = data.map((row, rowIndex) => {
+                if (rowIndex === 0) return row; // Mantém o cabeçalho original
 
-            return cell;
-        });
-    });
+                return row.map((cell, colIndex) => {
+                    let header = data[0][colIndex].trim().toLowerCase();
 
-    // Criar planilha e autoajustar colunas
-    const worksheet = XLSX.utils.aoa_to_sheet(formattedData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Romaneio de Spool");
+                    // Formatar DATA DO ROMANEIO no formato dia/mês/ano
+                    if (header === "data do romaneio") {
+                        return formatDate(cell);
+                    }
 
-    // Ajuste automático da largura das colunas
-    const colWidths = formattedData[0].map((_, i) => ({
-        wch: Math.max(...formattedData.map(row => (row[i] ? row[i].toString().length : 10))) + 2
-    }));
-    worksheet["!cols"] = colWidths;
+                    // Substituir pontos por vírgulas em PESO e ÁREA SUPERF.
+                    if (header === "peso" || header === "área superf.") {
+                        return cell.toString().replace(".", ",");
+                    }
 
-    // Criar o arquivo Excel
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+                    return cell;
+                });
+            });
 
-    // Criar link para download
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "Romaneio_Atualizado.xlsx";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-}
+            // Criar planilha e autoajustar colunas
+            const worksheet = XLSX.utils.aoa_to_sheet(formattedData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Romaneio de Spool");
 
+            // Ajuste automático da largura das colunas
+            const colWidths = formattedData[0].map((_, i) => ({
+                wch: Math.max(...formattedData.map(row => (row[i] ? row[i].toString().length : 10))) + 2
+            }));
+            worksheet["!cols"] = colWidths;
+
+            // Criar o arquivo Excel
+            const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+            const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+
+            // Criar link para download
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "Romaneio_Atualizado.xlsx";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
 
         // Funções para compressão e descompressão de dados
         function compressData(data) {
