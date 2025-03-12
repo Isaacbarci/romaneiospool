@@ -412,11 +412,32 @@
             renderTable();
         }
 
-        function downloadExcel() {
-            if (data.length === 0) {
-                alert("Nenhum dado disponível para exportar.");
-                return;
+       function downloadExcel() {
+    const url = "https://romaneiospool.onrender.com"; // URL do arquivo Excel
+
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Erro ao carregar o arquivo: ${response.statusText}`);
             }
+            return response.blob(); // Converte a resposta em um Blob
+        })
+        .then(blob => {
+            // Cria um link para download
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "Romaneio_Atualizado.xlsx"; // Nome do arquivo para download
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(error => {
+            console.error("Erro ao fazer o download do arquivo:", error);
+            alert(`Erro ao fazer o download do arquivo: ${error.message}`);
+        });
+}
 
             // Criar uma cópia dos dados formatados antes da exportação
             const formattedData = data.map((row, rowIndex) => {
