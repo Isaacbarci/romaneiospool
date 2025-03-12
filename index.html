@@ -455,7 +455,7 @@
             const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
 
             // Criar link para download
-            const url =https://romaneiospool.onrender.com window.URL.createObjectURL(blob);
+            const url = window.URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
             a.download = "Romaneio_Atualizado.xlsx";
