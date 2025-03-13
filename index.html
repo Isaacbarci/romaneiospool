@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Romaneio de Spool</title>
+    <title>Romaneio de Suporte</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body {
+       body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
@@ -124,19 +124,21 @@
         }
         .edited-row {
             background-color: darkgray !important;
+
         }
- </style>
+    </style>
 </head>
 <body>
-    <h2>ROMANEIO DE SPOOL</h2>
+    <h2>ROMANEIO DE SUPORTE</h2>
     <select id="fileList">
         <option value="">Selecione um arquivo</option>
-        <option value="Compressores.xlsx">Compressores</option>
+        <option value="Patio de Madeira.xlsx">Patio de Madeira</option>
         <option value="Raizen.xlsx">Raizen</option>
+        <option value="Eldorado.xlsx">Eldorado</option>
     </select>
     <button onclick="confirmUpdate()">Atualizar Arquivo</button>
-    <input type="text" id="identificacaoFilter" placeholder="Filtrar por ISOMÉTRICO ou QR Code">
-    <button onclick="downloadExcel()">Download do Excel</button>
+    <input type="text" id="identificacaoFilter" placeholder="Filtrar por QR ou Identificação" onkeyup="applyFilter()">
+    <button onclick="downloadExcel()">Download Excel</button>
     <button onclick="startQrScanner()">Escanear QR Code</button>
 
     <div id="qr-container" style="display: none;">
@@ -145,21 +147,20 @@
     </div>
 
     <div class="table-container">
-        <table id="dataTable">
-            <thead></thead>
-            <tbody></tbody>
-        </table>
+        <table id="dataTable"></table>
     </div>
 
     <div id="editModal" class="modal">
         <input type="hidden" id="editIndex">
-        <label>ISOMÉTRICO: <input type="text" id="ISOMETRICO" readonly></label>
-        <label>SPOOL: <input type="text" id="SPOOL" readonly></label>
-        <label>PESO: <input type="text" id="PESO" readonly></label>
-        <label>ÁREA: <input type="text" id="AREA" readonly></label>
-        <label>PROG FAB: <input type="text" id="PROGFAB" readonly></label>
+        <label>Posição / TAG: <input type="text" id="POSICAOTAG" readonly></label>
+        <label>Identificação 1: <input type="text" id="IDENTIFICACAO1" readonly></label>
+        <label>Identificação 2: <input type="text" id="IDENTIFICACAO2" readonly></label>
+        <label>Peso (kg): <input type="text" id="PesoKg" readonly></label>
         <label>Data do Romaneio: <input type="date" id="DATADOROMANEIO"></label>
+        <label>Qtd Enviada: <input type="text" id="QTDENVIADA"></label>
         <label>Obs Romaneio: <input type="text" id="OBSROMANEIO"></label>
+        <label>Qtde: <input type="text" id="Qtde" readonly></label>
+        <label>Saldo: <input type="text" id="Saldo" readonly></label>
         <button class="save-btn" onclick="saveEdit()">Salvar</button>
         <button class="close-btn" onclick="closeModal()">Fechar</button>
     </div>
@@ -170,28 +171,17 @@
         let columnIndexes = {};
         let editedRows = new Set();
         let qrScanner;
-        const itemsPerPage = 500; // Itens por página
+
+        const rowsPerPage = 500; // Número de linhas por página
 
         const hiddenColumns = [
-            "ÁREA", "REV", "MATERIAL", "PROG FAB", "EXECUTANTE FAB",
-            "PESO", "LINHA", "COND PINT", "DIÂM. NOMINAL",
-            "ÁREA SUPERF.", "OBS ROMANEIO", "ID_SPOOL"
+            "desenho suporte", "informações", "isométrico", "peso (kg)", "cond. pintura",
+            "área superfície", "data corte", "data acoplamento", "data solda",
+            "data jato/pintura", "número romaneio", "data romaneio", "data recebimento",
+            "observação", "area m² unitário", "data cadastro", "rev", "prog. fab.", "executante", "linha", "spool",
+            "localização", "status", "peso unitário", "qtde enviada", "obs romaneio", "qtde", "saldo", "tipo de suporte", "tipo estrutura", "id", "serviço",
+            "identificação 2", "area m²", "peso"
         ];
-
-        // Função debounce para melhorar o desempenho do filtro
-        function debounce(func, wait) {
-            let timeout;
-            return function (...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), wait);
-            };
-        }
-
-        // Aplica o filtro com debounce
-        const applyFilterDebounced = debounce(applyFilter, 300);
-
-        // Configura o evento de input com debounce
-        document.getElementById("identificacaoFilter").addEventListener("input", applyFilterDebounced);
 
         function confirmUpdate() {
             const selectedFile = document.getElementById("fileList").value;
@@ -210,7 +200,7 @@
             fetch(fileName)
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error(`Erro ao carregar o arquivo: ${response.statusText}`);
+                        throw new Error(`Erro ao carregar arquivo: ${response.statusText}`);
                     }
                     return response.arrayBuffer();
                 })
@@ -219,31 +209,32 @@
                     const sheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false });
 
-                    if (jsonData.length === 0) {
-                        throw new Error("O arquivo está vazio ou não contém dados.");
-                    }
-
                     data = jsonData;
+                    localStorage.setItem("uploadedData", JSON.stringify(data));
+
                     filteredData = data.slice(1);
                     editedRows.clear();
+                    localStorage.removeItem("editedRows");
+
                     findColumnIndexes();
                     renderTable();
-                    saveToLocalStorage("uploadedData", data);
-                    saveToLocalStorage("editedRows", Array.from(editedRows));
                 })
                 .catch(error => {
                     console.error("Erro ao carregar o arquivo:", error);
-                    alert(`Erro ao carregar o arquivo: ${error.message}`);
+                    alert("Erro ao carregar o arquivo. Verifique se o nome está correto.");
                 });
         }
 
         function formatDate(dateString) {
             if (!dateString) return "";
+
             const date = new Date(dateString);
             if (isNaN(date.getTime())) return "";
+
             const day = String(date.getUTCDate()).padStart(2, "0");
             const month = String(date.getUTCMonth() + 1).padStart(2, "0");
             const year = date.getUTCFullYear();
+
             return `${day}/${month}/${year}`;
         }
 
@@ -260,108 +251,119 @@
         function findColumnIndexes() {
             columnIndexes = {};
             data[0].forEach((header, index) => {
-                // Remove espaços extras e padroniza para minúsculas
-                const cleanHeader = header.trim().toLowerCase();
-                columnIndexes[cleanHeader] = index;
+                columnIndexes[header.trim().toLowerCase()] = index;
             });
         }
 
+        function applyFilter() {
+    const filterValue = document.getElementById("identificacaoFilter").value.trim().toLowerCase();
+
+    // Verifica se as colunas "QR" e "Identificação 1" existem
+    const qrColumnIndex = columnIndexes["qr"];
+    const identificacao1Index = columnIndexes["identificação 1"];
+
+    if (qrColumnIndex === undefined || identificacao1Index === undefined) {
+        console.error("Coluna 'QR' ou 'Identificação 1' não encontrada.");
+        return;
+    }
+
+    // Filtra os dados com base no valor do filtro
+    filteredData = data.slice(1).filter(row => {
+        const qrValue = String(row[qrColumnIndex]).toLowerCase();
+        const identificacao1Value = String(row[identificacao1Index]).toLowerCase();
+
+        // Retorna true se o valor do filtro estiver presente em qualquer uma das colunas
+        return qrValue.includes(filterValue) || identificacao1Value.includes(filterValue);
+    });
+
+    renderTable();
+}
+
         function renderTable() {
             const table = document.getElementById("dataTable");
-            const thead = table.querySelector("thead");
-            const tbody = table.querySelector("tbody");
-
-            // Limpa a tabela
-            thead.innerHTML = "";
-            tbody.innerHTML = "";
+            table.innerHTML = "";
 
             if (!data.length) return;
 
-            // Identifica os índices das colunas a serem ocultadas
-            findColumnIndexes();
-            const hiddenColumnIndexes = new Set();
-
-            data[0].forEach((header, colIndex) => {
-                const cleanHeader = header.trim().toUpperCase(); // Remove espaços extras e padroniza maiúsculas
-                if (hiddenColumns.includes(cleanHeader)) {
-                    hiddenColumnIndexes.add(colIndex);
-                }
-            });
-
-            // Renderiza o cabeçalho
+            const fragment = document.createDocumentFragment();
             const headerRow = document.createElement("tr");
+
             data[0].forEach((header, colIndex) => {
-                if (!hiddenColumnIndexes.has(colIndex)) { // Verifica se a coluna deve ser exibida
+                if (!hiddenColumns.includes(header.trim().toLowerCase())) {
                     const th = document.createElement("th");
                     th.textContent = header;
                     headerRow.appendChild(th);
                 }
             });
-            thead.appendChild(headerRow);
 
-            // Renderiza os itens da página atual
-            const pageData = filteredData.slice(0, itemsPerPage);
+            fragment.appendChild(headerRow);
 
-            pageData.forEach((row, rowIndex) => {
-                const tr = document.createElement("tr");
+            filteredData.slice(0, rowsPerPage).forEach((row, index) => {
                 const originalIndex = data.indexOf(row);
-                const dataRomaneio = row[columnIndexes["data do romaneio"]];
+                if (originalIndex === -1) return;
 
-                if (dataRomaneio && editedRows.has(originalIndex)) {
-                    tr.classList.add("edited-row");
-                }
+                const tr = document.createElement("tr");
+                tr.onclick = () => openEditModal(originalIndex);
 
-                tr.onclick = () => openEditModal(rowIndex);
                 row.forEach((cell, colIndex) => {
-                    if (!hiddenColumnIndexes.has(colIndex)) { // Oculta as colunas especificadas
+                    if (!hiddenColumns.includes(data[0][colIndex].trim().toLowerCase())) {
                         const td = document.createElement("td");
-                        let cellValue = cell || "N/A";
-                        if (data[0][colIndex].trim().toLowerCase() === "data do romaneio") {
-                            cellValue = formatDate(cellValue);
+
+                        if (data[0][colIndex].toLowerCase() === "data do romaneio") {
+                            td.textContent = formatDate(cell);
+                        } else {
+                            td.textContent = cell || "";
                         }
-                        td.textContent = cellValue;
+
                         tr.appendChild(td);
                     }
                 });
-                tbody.appendChild(tr);
+
+                if (editedRows.has(originalIndex)) {
+                    tr.classList.add("edited-row");
+                }
+
+                fragment.appendChild(tr);
             });
+
+            table.appendChild(fragment);
         }
 
         function openEditModal(index) {
-            const originalIndex = data.indexOf(filteredData[index]);
-            document.getElementById("editIndex").value = originalIndex;
-            document.getElementById("ISOMETRICO").value = filteredData[index][columnIndexes["isométrico"]] || "N/A";
-            document.getElementById("SPOOL").value = filteredData[index][columnIndexes["spool"]] || "N/A";
-            document.getElementById("PESO").value = filteredData[index][columnIndexes["peso"]] || "N/A";
-            document.getElementById("AREA").value = filteredData[index][columnIndexes["área"]] || "N/A"; // Certifique-se de que "área" está em minúsculas
-            document.getElementById("PROGFAB").value = filteredData[index][columnIndexes["prog fab"]] || "N/A";
-            document.getElementById("DATADOROMANEIO").value = formatDateForInput(filteredData[index][columnIndexes["data do romaneio"]]);
-            document.getElementById("OBSROMANEIO").value = filteredData[index][columnIndexes["obs romaneio"]] || "";
+            if (index < 0 || index >= data.length) return;
+
+            document.getElementById("editIndex").value = index;
+
+            document.getElementById("POSICAOTAG").value = data[index][columnIndexes["posição / tag"]] || "";
+            document.getElementById("IDENTIFICACAO1").value = data[index][columnIndexes["identificação 1"]] || "";
+            document.getElementById("IDENTIFICACAO2").value = data[index][columnIndexes["identificação 2"]] || "";
+            document.getElementById("PesoKg").value = data[index][columnIndexes["peso (kg)"]] || "";
+            document.getElementById("DATADOROMANEIO").value = formatDateForInput(data[index][columnIndexes["data do romaneio"]]);
+            document.getElementById("QTDENVIADA").value = data[index][columnIndexes["qtd enviada"]] || "";
+            document.getElementById("OBSROMANEIO").value = data[index][columnIndexes["obs romaneio"]] || "";
+            document.getElementById("Qtde").value = data[index][columnIndexes["qtde"]] || "";
+            document.getElementById("Saldo").value = data[index][columnIndexes["saldo"]] || "";
 
             document.getElementById("editModal").style.display = "block";
         }
 
         function saveEdit() {
             const originalIndex = parseInt(document.getElementById("editIndex").value);
-            if (originalIndex < 0) return;
+            if (originalIndex < 0 || originalIndex >= data.length) return;
 
-            const originalRow = data[originalIndex];
-            const editedRow = [
-                document.getElementById("DATADOROMANEIO").value,
-                document.getElementById("OBSROMANEIO").value
-            ];
+            data[originalIndex][columnIndexes["data do romaneio"]] = document.getElementById("DATADOROMANEIO").value;
+            data[originalIndex][columnIndexes["qtd enviada"]] = document.getElementById("QTDENVIADA").value;
+            data[originalIndex][columnIndexes["obs romaneio"]] = document.getElementById("OBSROMANEIO").value;
 
-            if (
-                originalRow[columnIndexes["data do romaneio"]] !== editedRow[0] ||
-                originalRow[columnIndexes["obs romaneio"]] !== editedRow[1]
-            ) {
-                data[originalIndex][columnIndexes["data do romaneio"]] = editedRow[0];
-                data[originalIndex][columnIndexes["obs romaneio"]] = editedRow[1];
-
+            const dataRomaneio = document.getElementById("DATADOROMANEIO").value;
+            if (!dataRomaneio) {
+                editedRows.delete(originalIndex);
+            } else {
                 editedRows.add(originalIndex);
-                saveToLocalStorage("uploadedData", data);
-                saveToLocalStorage("editedRows", Array.from(editedRows));
             }
+
+            localStorage.setItem("uploadedData", JSON.stringify(data));
+            localStorage.setItem("editedRows", JSON.stringify(Array.from(editedRows)));
 
             document.getElementById("editModal").style.display = "none";
             renderTable();
@@ -406,108 +408,142 @@
             }
         }
 
-        function applyFilter() {
-            const filterValue = document.getElementById("identificacaoFilter").value.toLowerCase();
-            filteredData = data.slice(1).filter(row => {
-                const isometrico = row[columnIndexes["isométrico"]]?.toString().toLowerCase();
-                return isometrico?.includes(filterValue) || row.some(cell => cell.toString().toLowerCase().includes(filterValue));
-            });
-            renderTable();
-        }
-
         function downloadExcel() {
-            if (data.length === 0) {
-                alert("Nenhum dado disponível para exportar.");
+            if (!data.length) {
+                alert("Nenhum dado carregado para exportar.");
                 return;
             }
 
-            // Criar uma cópia dos dados formatados antes da exportação
-            const formattedData = data.map((row, rowIndex) => {
-                if (rowIndex === 0) return row; // Mantém o cabeçalho original
 
-                return row.map((cell, colIndex) => {
-                    let header = data[0][colIndex].trim().toLowerCase();
 
-                    // Formatar DATA DO ROMANEIO no formato dia/mês/ano
-                    if (header === "data do romaneio") {
-                        return formatDate(cell);
+            let headerRow = [...data[0]];
+            let pesoKgIndex = columnIndexes["peso (kg)"];
+            let areaSuperficieIndex = columnIndexes["área superfície"];
+            let pesoUnitarioIndex = columnIndexes["peso unitário"];
+            let areaM2UnitarioIndex = columnIndexes["area m² unitário"];
+            let qtdeIndex = columnIndexes["qtde"];
+            let dataRomaneioIndex = columnIndexes["data do romaneio"];
+            let statusIndex = columnIndexes["status"];
+            let observacaoIndex = columnIndexes["observação"];
+            let dataRecebimentoIndex = columnIndexes["data recebimento"];
+
+            let newData = data.map((row, index) => {
+                if (index === 0) {
+
+                    let reorderedHeader = [];
+                    headerRow.forEach((header, colIndex) => {
+                        if (colIndex === pesoUnitarioIndex) {
+                            reorderedHeader.push(header);
+                            if (pesoKgIndex !== undefined) {
+                                reorderedHeader.push("PESO TOTAL");
+                            }
+                        } else if (colIndex === areaM2UnitarioIndex) {
+                            reorderedHeader.push(header);
+                            if (areaSuperficieIndex !== undefined) {
+                                reorderedHeader.push("ÁREA M² TOTAL");
+                            }
+                        } else if (colIndex === statusIndex) {
+                            reorderedHeader.push(header);
+                            reorderedHeader.push(headerRow[dataRomaneioIndex]);
+                        } else if (colIndex === dataRecebimentoIndex) {
+                            reorderedHeader.push(header);
+                            reorderedHeader.push(headerRow[observacaoIndex]);
+                        } else if (colIndex !== pesoKgIndex && colIndex !== areaSuperficieIndex && colIndex !== dataRomaneioIndex && colIndex !== observacaoIndex) {
+                            reorderedHeader.push(header);
+                        }
+                    });
+
+                    return reorderedHeader;
+                }
+
+                let qtde = parseFloat(row[qtdeIndex]?.toString().replace(",", ".")) || 0;
+                let pesoKg = parseFloat(row[pesoKgIndex]?.toString().replace(",", ".")) || 0;
+                let areaSuperficie = parseFloat(row[areaSuperficieIndex]?.toString().replace(",", ".")) || 0;
+
+                if (qtde > 0) {
+                    row[pesoUnitarioIndex] = (pesoKg / qtde).toFixed(2).replace(".", ",");
+                    row[areaM2UnitarioIndex] = (areaSuperficie / qtde).toFixed(2).replace(".", ",");
+                } else {
+                    row[pesoUnitarioIndex] = "0,00";
+                    row[areaM2UnitarioIndex] = "0,00";
+                }
+
+                row[pesoKgIndex] = row[pesoKgIndex]?.toString().replace(".", ",");
+                row[areaSuperficieIndex] = row[areaSuperficieIndex]?.toString().replace(".", ",");
+
+                Object.entries(columnIndexes).forEach(([colName, colIndex]) => {
+                    if (colName.includes("data") && colName !== "data cadastro") {
+                        let dateValue = row[colIndex];
+                        if (dateValue && !isNaN(new Date(dateValue))) {
+                            let dateObj = new Date(dateValue);
+                            dateObj.setDate(dateObj.getDate() + 1);
+                            row[colIndex] = dateObj.toLocaleDateString("pt-BR");
+                        }
                     }
-
-                    // Substituir pontos por vírgulas em PESO e ÁREA SUPERF.
-                    if (header === "peso" || header === "área superf.") {
-                        return cell.toString().replace(".", ",");
-                    }
-
-                    return cell;
                 });
+
+                let reorderedRow = [];
+                row.forEach((cell, colIndex) => {
+                    if (colIndex === pesoUnitarioIndex) {
+                        reorderedRow.push(cell);
+                        if (pesoKgIndex !== undefined) {
+                            reorderedRow.push(row[pesoKgIndex]);
+                        }
+                    } else if (colIndex === areaM2UnitarioIndex) {
+                        reorderedRow.push(cell);
+                        if (areaSuperficieIndex !== undefined) {
+                            reorderedRow.push(row[areaSuperficieIndex]);
+                        }
+                    } else if (colIndex === statusIndex) {
+                        reorderedRow.push(cell);
+                        reorderedRow.push(row[dataRomaneioIndex]);
+                    } else if (colIndex === dataRecebimentoIndex) {
+                        reorderedRow.push(cell);
+                        reorderedRow.push(row[observacaoIndex]);
+                    } else if (colIndex !== pesoKgIndex && colIndex !== areaSuperficieIndex && colIndex !== dataRomaneioIndex && colIndex !== observacaoIndex) {
+                        reorderedRow.push(cell);
+                    }
+                });
+
+                return reorderedRow;
             });
 
-            // Criar planilha e autoajustar colunas
-            const worksheet = XLSX.utils.aoa_to_sheet(formattedData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Romaneio de Spool");
+            const updatedSheet = XLSX.utils.aoa_to_sheet(newData);
 
-            // Ajuste automático da largura das colunas
-            const colWidths = formattedData[0].map((_, i) => ({
-                wch: Math.max(...formattedData.map(row => (row[i] ? row[i].toString().length : 10))) + 2
-            }));
-            worksheet["!cols"] = colWidths;
+            updatedSheet["!cols"] = newData[0].map((_, index) => {
+                let maxLength = Math.max(...newData.map(row => (row[index] ? row[index].toString().length : 0)));
+                return { wch: maxLength + 2 };
+            });
 
-            // Criar o arquivo Excel
-            const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-            const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-
-            // Criar link para download
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "Romaneio_Atualizado.xlsx";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }
-
-        // Funções para compressão e descompressão de dados
-        function compressData(data) {
-            return btoa(JSON.stringify(data));
-        }
-
-        function decompressData(compressedData) {
-            return JSON.parse(atob(compressedData));
-        }
-
-        function saveToLocalStorage(key, data) {
-            try {
-                const compressedData = compressData(data);
-                localStorage.setItem(key, compressedData);
-            } catch (error) {
-                console.error("Erro ao salvar no localStorage:", error);
-                alert("Erro ao salvar os dados. O arquivo pode ser muito grande.");
-            }
-        }
-
-        function loadFromLocalStorage(key) {
-            const compressedData = localStorage.getItem(key);
-            if (compressedData) {
-                return decompressData(compressedData);
-            }
-            return null;
+                        const newWorkbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(newWorkbook, updatedSheet, "Planilha1");
+            XLSX.writeFile(newWorkbook, "romaneio.xlsx");
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            // Carrega os dados do localStorage (se existirem)
-            const storedData = loadFromLocalStorage("uploadedData");
+            const storedData = localStorage.getItem("uploadedData");
             if (storedData) {
-                data = storedData;
-                filteredData = data.slice(1);
-                findColumnIndexes();
-                renderTable();
+                try {
+                    data = JSON.parse(storedData);
+                    filteredData = data.slice(1);
+                    findColumnIndexes();
+                } catch (error) {
+                    console.error("Erro ao carregar os dados armazenados:", error);
+                    localStorage.removeItem("uploadedData");
+                }
             }
 
-            const storedEditedRows = loadFromLocalStorage("editedRows");
+            const storedEditedRows = localStorage.getItem("editedRows");
             if (storedEditedRows) {
-                editedRows = new Set(storedEditedRows);
+                try {
+                    editedRows = new Set(JSON.parse(storedEditedRows));
+                } catch (error) {
+                    console.error("Erro ao carregar as edições armazenadas:", error);
+                    localStorage.removeItem("editedRows");
+                }
+            }
+
+            if (data.length) {
                 renderTable();
             }
         });
