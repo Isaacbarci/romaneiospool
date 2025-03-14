@@ -130,18 +130,19 @@
 <body>
      <!-- Cabeçalho com Logo e Título -->
   <h2 style="display: flex; align-items: center;">
-    <img src="image.png" alt="Logo" style="height: 40px; width: 100px; margin-right: 10px; margin-left: -20px;">
+    <img src="image.png" alt="Logo" style="height: 35px; width: 95px; margin-right: 5px; margin-left: -15px;">
     ROMANEIO DE SPOOL
 </h2>
-<p style="font-size: 7px; color: white; margin-left: 8px; margin-top: -12px;">
+<p style="font-size: 7px; color: white; margin-left: 13px; margin-top: -12px;">
     Developed by Isaac Dutra
 </p>
 
-    <select id="fileList">
-        <option value="">Selecione um arquivo</option>
-        <option value="Compressores.xlsx">Compressores</option>
-        <option value="Raizen.xlsx">Raizen</option>
-    </select>
+    <select id="fileList" style="margin-left: 5px;">
+    <option value="">Selecione um arquivo</option>
+    <option value="Compressores.xlsx">Compressores</option>
+    <option value="Raizen.xlsx">Raizen</option>
+</select>
+
     <button onclick="confirmUpdate()">Atualizar Arquivo</button>
     <input type="text" id="identificacaoFilter" placeholder="Filtrar por ISOMÉTRICO ou QR Code">
     <button onclick="downloadExcel()">Download do Excel</button>
