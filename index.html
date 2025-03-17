@@ -475,7 +475,7 @@ function downloadExcel() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "Romaneio_Atualizado.xlsx";
+    a.download = "Romaneio_Spool.xlsx";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
