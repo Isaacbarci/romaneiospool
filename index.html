@@ -424,58 +424,63 @@
             renderTable();
         }
 
-        function downloadExcel() {
-            if (data.length === 0) {
-                alert("Nenhum dado disponível para exportar.");
-                return;
+function downloadExcel() {
+    if (data.length === 0) {
+        alert("Nenhum dado disponível para exportar.");
+        return;
+    }
+
+    // Criar uma cópia dos dados formatados antes da exportação
+    const formattedData = data.map((row, rowIndex) => {
+        if (rowIndex === 0) return row; // Mantém o cabeçalho original
+
+        return row.map((cell, colIndex) => {
+            let header = data[0][colIndex].trim().toLowerCase();
+
+            // Formatar DATA DO ROMANEIO no formato dia/mês/ano
+            if (header === "data do romaneio") {
+                return formatDate(cell);
             }
 
-            // Criar uma cópia dos dados formatados antes da exportação
-            const formattedData = data.map((row, rowIndex) => {
-                if (rowIndex === 0) return row; // Mantém o cabeçalho original
+            // Converter PESO e ÁREA SUPERF. para números
+            if (header === "peso" || header === "área superf.") {
+                if (cell === "" || cell === null || cell === undefined) {
+                    return ""; // Mantém o valor vazio
+                }
+                // Converte para número (substitui vírgula por ponto)
+                const numericValue = parseFloat(cell.toString().replace(",", "."));
+                return isNaN(numericValue) ? "" : numericValue; // Retorna vazio se não for um número válido
+            }
 
-                return row.map((cell, colIndex) => {
-                    let header = data[0][colIndex].trim().toLowerCase();
+            return cell;
+        });
+    });
 
-                    // Formatar DATA DO ROMANEIO no formato dia/mês/ano
-                    if (header === "data do romaneio") {
-                        return formatDate(cell);
-                    }
+    // Criar planilha e autoajustar colunas
+    const worksheet = XLSX.utils.aoa_to_sheet(formattedData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Romaneio de Spool");
 
-                    // Substituir pontos por vírgulas em PESO e ÁREA SUPERF.
-                    if (header === "peso" || header === "área superf.") {
-                        return cell.toString().replace(".", ",");
-                    }
+    // Ajuste automático da largura das colunas
+    const colWidths = formattedData[0].map((_, i) => ({
+        wch: Math.max(...formattedData.map(row => (row[i] ? row[i].toString().length : 10))) + 2
+    }));
+    worksheet["!cols"] = colWidths;
 
-                    return cell;
-                });
-            });
+    // Criar o arquivo Excel
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
 
-            // Criar planilha e autoajustar colunas
-            const worksheet = XLSX.utils.aoa_to_sheet(formattedData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Romaneio de Spool");
-
-            // Ajuste automático da largura das colunas
-            const colWidths = formattedData[0].map((_, i) => ({
-                wch: Math.max(...formattedData.map(row => (row[i] ? row[i].toString().length : 10))) + 2
-            }));
-            worksheet["!cols"] = colWidths;
-
-            // Criar o arquivo Excel
-            const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-            const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-
-            // Criar link para download
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "Romaneio_Atualizado.xlsx";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }
+    // Criar link para download
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Romaneio_Atualizado.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
 
         // Funções para compressão e descompressão de dados
         function compressData(data) {
