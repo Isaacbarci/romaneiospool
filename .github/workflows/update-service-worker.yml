@@ -15,15 +15,18 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '14'
+          node-version: '18'  # Bun funciona melhor com Node.js 18+
+
+      - name: Install Bun
+        run: curl -fsSL https://bun.sh/install | bash
 
       - name: Update Service Worker Version
         run: |
           sed -i 's/my-site-cache-v1/my-site-cache-v2/' service-worker.js
           echo "// Force update: $(date)" >> service-worker.js
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies with Bun
+        run: bun install
 
       - name: Configure Git
         run: |
@@ -36,8 +39,8 @@ jobs:
           git commit -m "Automated: Updated Service Worker Version" || echo "No changes to commit"
           git push
 
-      - name: Install Vercel CLI  # <--- ADICIONADO PARA EVITAR ERROS
-        run: npm install -g vercel
+      - name: Install Vercel CLI
+        run: bun add -g vercel
 
       - name: Deploy to Vercel
         run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
