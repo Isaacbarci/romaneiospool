@@ -1,4 +1,5 @@
-name: Update Service Worker
+name: 🚀 Update Service Worker
+
 on:
   push:
     branches:
@@ -9,26 +10,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: 📥 Checkout do Código
+        uses: actions/checkout@v3
 
-      # Atualiza o Node.js para uma versão compatível com pnpm
-      - name: Set up Node.js
+      - name: ⚙️ Configurar Node.js e pnpm
         uses: actions/setup-node@v3
         with:
-          node-version: '18'  # Garante Node.js 18 ou superior
-          cache: 'pnpm'  # Usa cache para acelerar builds futuros
+          node-version: '18'
+          cache: 'pnpm'
 
-      - name: Install pnpm
+      - name: 📦 Instalar `pnpm`
         run: npm install -g pnpm
 
-      - name: Install dependencies with pnpm
+      - name: 🛠 Verificar instalação do `pnpm`
+        run: pnpm --version
+
+      - name: 📂 Instalar Dependências
         run: pnpm install --frozen-lockfile
 
-      - name: Install Vercel CLI
+      - name: 🚀 Instalar Vercel CLI
         run: pnpm add -g vercel
 
-      - name: Deploy to Vercel
+      - name: 🛠 Verificar instalação do `vercel`
+        run: vercel --version
+
+      - name: 🔑 Login na Vercel (se necessário)
+        run: vercel login --token ${{ secrets.VERCEL_TOKEN }}
+
+      - name: 📦 Deploy na Vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel --prod --token $VERCEL_TOKEN
+        run: vercel --prod --token $VERCEL_TOKEN --confirm --force
