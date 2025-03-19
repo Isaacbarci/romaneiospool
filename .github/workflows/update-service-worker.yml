@@ -16,14 +16,18 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: '18'
-          cache: 'pnpm'  # Habilita cache para acelerar builds
 
       - name: Install pnpm
         run: npm install -g pnpm
 
+      - name: Set up pnpm in PATH
+        run: echo "$HOME/.local/share/pnpm" >> $GITHUB_PATH
+
       - name: Update Service Worker Version
         run: |
-          sed -i 's/my-site-cache-v1/my-site-cache-v2/' service-worker.js
+          VERSION=$(date +"%Y%m%d%H%M%S")  # Gera um timestamp único
+          sed -i "s/const CACHE_VERSION = .*/const CACHE_VERSION = '${VERSION}';/" service-worker.js
+          sed -i "s/const CACHE_NAME = .*/const CACHE_NAME = 'romaneio-cache-${VERSION}';/" service-worker.js
           echo "// Force update: $(date)" >> service-worker.js
 
       - name: Install dependencies with pnpm
