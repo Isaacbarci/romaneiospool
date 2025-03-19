@@ -19,6 +19,10 @@ jobs:
         with:
           node-version: '14'
 
+          - name: Deploy to Vercel
+  run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+
+
       # Atualiza a versão do Service Worker (forçando alteração)
       - name: Update Service Worker Version
         run: |
