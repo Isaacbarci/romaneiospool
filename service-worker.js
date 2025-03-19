@@ -3,21 +3,40 @@ const CACHE_NAME = `romaneio-cache-${CACHE_VERSION}`;
 
 // Função para adicionar um arquivo ao cache
 const addToCache = async (cacheName, file) => {
-    const cache = await caches.open(cacheName);
-    await cache.add(file);
+    try {
+        const cache = await caches.open(cacheName);
+        await cache.add(file);
+    } catch (error) {
+        console.error(`Erro ao adicionar ${file} ao cache:`, error);
+    }
 };
 
 // Instalação do Service Worker
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => cache.addAll([
-                '/',
-                'index.html',
-                'image.png',
-                'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js',
-                'https://unpkg.com/html5-qrcode',
-            ]))
+            .then(async (cache) => {
+                const urlsToCache = [
+                    '/',
+                    'index.html',
+                    'image.png'
+                ];
+                await cache.addAll(urlsToCache);
+
+                // Faz fetch manual dos arquivos externos para evitar CORS
+                const externalUrls = [
+                    'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js',
+                    'https://unpkg.com/html5-qrcode'
+                ];
+                await Promise.all(externalUrls.map(async (url) => {
+                    try {
+                        const response = await fetch(url, { mode: 'no-cors' });
+                        await cache.put(url, response);
+                    } catch (error) {
+                        console.warn(`Falha ao cachear ${url}:`, error);
+                    }
+                }));
+            })
     );
     self.skipWaiting(); // Força a ativação imediata
 });
@@ -25,8 +44,14 @@ self.addEventListener('install', (event) => {
 // Intercepta as requisições e serve do cache
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-        caches.match(event.request)
-            .then((response) => response || fetch(event.request))
+        caches.match(event.request).then((response) => {
+            return response || fetch(event.request).catch(() => {
+                return new Response('Erro ao buscar o recurso e não está no cache.', {
+                    status: 408,
+                    statusText: 'Network Error'
+                });
+            });
+        })
     );
 });
 
@@ -44,7 +69,8 @@ self.addEventListener('activate', (event) => {
             return Promise.all(
                 cacheNames.map((cache) => {
                     if (cache !== CACHE_NAME) {
-                        return caches.delete(cache); // Remove caches antigos
+                        console.log(`Removendo cache antigo: ${cache}`);
+                        return caches.delete(cache);
                     }
                 })
             );
@@ -53,5 +79,3 @@ self.addEventListener('activate', (event) => {
     self.clients.claim(); // Garante que os clientes usem o novo Service Worker imediatamente
     console.log("Service Worker Version:", CACHE_VERSION);
 });
-// Force update: Wed Mar 19 20:26:46 UTC 2025
-// Force update: Wed Mar 19 20:30:53 UTC 2025
