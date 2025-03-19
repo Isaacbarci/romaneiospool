@@ -79,3 +79,4 @@ self.addEventListener('activate', (event) => {
     self.clients.claim(); // Garante que os clientes usem o novo Service Worker imediatamente
     console.log("Service Worker Version:", CACHE_VERSION);
 });
+// Force update: Wed Mar 19 20:33:01 UTC 2025
