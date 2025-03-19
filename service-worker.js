@@ -19,6 +19,7 @@ self.addEventListener('install', (event) => {
                 'https://unpkg.com/html5-qrcode',
             ]))
     );
+    self.skipWaiting(); // Força a ativação imediata
 });
 
 // Intercepta as requisições e serve do cache
@@ -49,6 +50,6 @@ self.addEventListener('activate', (event) => {
             );
         })
     );
+    self.clients.claim(); // Garante que os clientes usem o novo Service Worker imediatamente
     console.log("Service Worker Version:", CACHE_VERSION);
 });
-// Force update: Wed Mar 19 20:23:27 UTC 2025
