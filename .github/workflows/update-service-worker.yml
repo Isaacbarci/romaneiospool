@@ -13,16 +13,16 @@ jobs:
       - name: 📥 Checkout do Código
         uses: actions/checkout@v3
 
-      - name: ⚙️ Configurar Node.js e pnpm
+      - name: ⚙️ Configurar Node.js e ativar pnpm
         uses: actions/setup-node@v3
         with:
           node-version: '18'
           cache: 'pnpm'
 
-      - name: 📦 Instalar `pnpm`
-        run: npm install -g pnpm
+      - name: 🔧 Habilitar `pnpm`
+        run: corepack enable && corepack prepare pnpm@latest --activate
 
-      - name: 🛠 Verificar instalação do `pnpm`
+      - name: 📦 Verificar instalação do `pnpm`
         run: pnpm --version
 
       - name: 📂 Instalar Dependências
