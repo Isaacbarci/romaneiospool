@@ -17,21 +17,12 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Set up pnpm in PATH
-        run: echo "$HOME/.local/share/pnpm" >> $GITHUB_PATH
-
       - name: Update Service Worker Version
         run: |
           VERSION=$(date +"%Y%m%d%H%M%S")  # Gera um timestamp único
           sed -i "s/const CACHE_VERSION = .*/const CACHE_VERSION = '${VERSION}';/" service-worker.js
           sed -i "s/const CACHE_NAME = .*/const CACHE_NAME = 'romaneio-cache-${VERSION}';/" service-worker.js
           echo "// Force update: $(date)" >> service-worker.js
-
-      - name: Install dependencies with pnpm
-        run: pnpm install --frozen-lockfile
 
       - name: Configure Git
         run: |
@@ -45,7 +36,7 @@ jobs:
           git push
 
       - name: Install Vercel CLI
-        run: pnpm add -g vercel
+        run: npm install -g vercel  # Usa npm apenas para instalar o Vercel CLI
 
       - name: Deploy to Vercel
         run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
