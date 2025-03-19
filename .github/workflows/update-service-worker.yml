@@ -1,4 +1,4 @@
-name: 🚀 Update Service Worker
+name: 🚀 Deploy Automático para Vercel
 
 on:
   push:
@@ -6,38 +6,49 @@ on:
       - main
 
 jobs:
-  update:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Checkout do Código
         uses: actions/checkout@v3
 
-      - name: ⚙️ Configurar Node.js e ativar pnpm
+      - name: ⚙️ Instalar Node.js (com cache para pnpm)
         uses: actions/setup-node@v3
         with:
           node-version: '18'
           cache: 'pnpm'
 
-      - name: 🔧 Habilitar `pnpm`
-        run: corepack enable && corepack prepare pnpm@latest --activate
+      - name: 📦 Instalar `pnpm` Globalmente
+        run: |
+          npm install -g pnpm
+          export PATH="$HOME/.npm-global/bin:$PATH"
 
-      - name: 📦 Verificar instalação do `pnpm`
-        run: pnpm --version
+      - name: ✅ Verificar Instalação do `pnpm`
+        run: |
+          echo "Verificando pnpm..."
+          which pnpm || echo "pnpm NÃO encontrado"
+          pnpm --version || echo "Erro ao executar pnpm"
 
       - name: 📂 Instalar Dependências
         run: pnpm install --frozen-lockfile
 
+      - name: 🔍 Verificar Pacotes Instalados
+        run: pnpm list
+
       - name: 🚀 Instalar Vercel CLI
-        run: pnpm add -g vercel
+        run: |
+          pnpm add -g vercel
+          export PATH="$HOME/.npm-global/bin:$PATH"
 
-      - name: 🛠 Verificar instalação do `vercel`
-        run: vercel --version
+      - name: ✅ Verificar Instalação do `vercel`
+        run: |
+          echo "Verificando Vercel CLI..."
+          which vercel || echo "vercel NÃO encontrado"
+          vercel --version || echo "Erro ao executar vercel"
 
-      - name: 🔑 Login na Vercel (se necessário)
-        run: vercel login --token ${{ secrets.VERCEL_TOKEN }}
-
-      - name: 📦 Deploy na Vercel
+      - name: 📦 Deploy para Vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel --prod --token $VERCEL_TOKEN --confirm --force
+        run: |
+          vercel --prod --token $VERCEL_TOKEN --confirm --force
