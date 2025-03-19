@@ -1,5 +1,5 @@
-const CACHE_VERSION = new Date().toISOString().replace(/[:.-]/g, ''); // Versão dinâmica baseada na data
-const CACHE_NAME = `romaneio-cache-${CACHE_VERSION}`;
+const CACHE_VERSION = '20250319205114';
+const CACHE_NAME = 'romaneio-cache-20250319205114';
 
 // Função para adicionar um arquivo ao cache
 const addToCache = async (cacheName, file) => {
@@ -78,3 +78,4 @@ self.addEventListener('activate', (event) => {
     self.clients.claim(); // Garante que os clientes usem o novo Service Worker imediatamente
     console.log("Service Worker Version:", CACHE_VERSION);
 });
+// Force update: Wed Mar 19 20:51:14 UTC 2025
