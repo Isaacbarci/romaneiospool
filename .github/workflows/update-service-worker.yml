@@ -20,21 +20,15 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Update Service Worker Version
-        run: |
-          VERSION=$(date +"%Y%m%d%H%M%S")
-          sed -i "s/const CACHE_VERSION = .*/const CACHE_VERSION = '${VERSION}';/" service-worker.js
-          sed -i "s/const CACHE_NAME = .*/const CACHE_NAME = 'romaneio-cache-${VERSION}';/" service-worker.js
-          echo "// Force update: $(date)" >> service-worker.js
-
-      - name: Commit changes
-        run: |
-          git add service-worker.js
-          git commit -m "Automated: Updated Service Worker Version" || echo "No changes to commit"
-          git push
-
       - name: Install Vercel CLI
         run: npm install -g vercel
 
+      - name: Debug Vercel Token
+        run: echo "Vercel Token Length: ${#VERCEL_TOKEN}"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
       - name: Deploy to Vercel
-        run: vercel deploy --prod --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prod --token $VERCEL_TOKEN
