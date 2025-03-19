@@ -1,4 +1,4 @@
-const CACHE_VERSION = new Date().toISOString(); // Versão dinâmica baseada na data
+const CACHE_VERSION = new Date().toISOString().replace(/[:.-]/g, ''); // Versão dinâmica baseada na data
 const CACHE_NAME = `romaneio-cache-${CACHE_VERSION}`;
 
 // Função para adicionar um arquivo ao cache
@@ -14,29 +14,28 @@ const addToCache = async (cacheName, file) => {
 // Instalação do Service Worker
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(async (cache) => {
-                const urlsToCache = [
-                    '/',
-                    'index.html',
-                    'image.png'
-                ];
-                await cache.addAll(urlsToCache);
+        caches.open(CACHE_NAME).then(async (cache) => {
+            const urlsToCache = [
+                '/',
+                'index.html',
+                'image.png'
+            ];
+            await cache.addAll(urlsToCache);
 
-                // Faz fetch manual dos arquivos externos para evitar CORS
-                const externalUrls = [
-                    'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js',
-                    'https://unpkg.com/html5-qrcode'
-                ];
-                await Promise.all(externalUrls.map(async (url) => {
-                    try {
-                        const response = await fetch(url, { mode: 'no-cors' });
-                        await cache.put(url, response);
-                    } catch (error) {
-                        console.warn(`Falha ao cachear ${url}:`, error);
-                    }
-                }));
-            })
+            // Faz fetch manual dos arquivos externos para evitar CORS
+            const externalUrls = [
+                'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js',
+                'https://unpkg.com/html5-qrcode'
+            ];
+            await Promise.all(externalUrls.map(async (url) => {
+                try {
+                    const response = await fetch(url, { mode: 'no-cors' });
+                    await cache.put(url, response);
+                } catch (error) {
+                    console.warn(`Falha ao cachear ${url}:`, error);
+                }
+            }));
+        })
     );
     self.skipWaiting(); // Força a ativação imediata
 });
@@ -79,5 +78,3 @@ self.addEventListener('activate', (event) => {
     self.clients.claim(); // Garante que os clientes usem o novo Service Worker imediatamente
     console.log("Service Worker Version:", CACHE_VERSION);
 });
-// Force update: Wed Mar 19 20:33:01 UTC 2025
-// Force update: Wed Mar 19 20:35:38 UTC 2025
