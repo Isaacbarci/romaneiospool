@@ -15,26 +15,19 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '18'  # Bun funciona melhor com Node.js 18+
+          node-version: '18'
+          cache: 'pnpm'  # Habilita cache para acelerar builds
 
-      - name: Install Bun
-        run: |
-          curl -fsSL https://bun.sh/install | bash
-          echo 'export BUN_INSTALL="$HOME/.bun"' >> $HOME/.bashrc
-          echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> $HOME/.bashrc
-          echo 'export BUN_INSTALL="$HOME/.bun"' >> $GITHUB_ENV
-          echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> $GITHUB_ENV
-          source $HOME/.bashrc
-          source $GITHUB_ENV
-          bun -v  # Verifica se o Bun foi instalado corretamente
+      - name: Install pnpm
+        run: npm install -g pnpm
 
       - name: Update Service Worker Version
         run: |
           sed -i 's/my-site-cache-v1/my-site-cache-v2/' service-worker.js
           echo "// Force update: $(date)" >> service-worker.js
 
-      - name: Install dependencies with Bun
-        run: bun install
+      - name: Install dependencies with pnpm
+        run: pnpm install --frozen-lockfile
 
       - name: Configure Git
         run: |
@@ -48,7 +41,7 @@ jobs:
           git push
 
       - name: Install Vercel CLI
-        run: bun add -g vercel
+        run: pnpm add -g vercel
 
       - name: Deploy to Vercel
         run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
