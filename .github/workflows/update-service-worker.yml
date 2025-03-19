@@ -1,54 +1,51 @@
-name: 🚀 Deploy Automático para Vercel
-
+name: Update Service Worker
 on:
   push:
     branches:
-      - main
+      - main  # Executa quando há um push na branch main
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
+  update:
+    runs-on: ubuntu-latest  # Ambiente Ubuntu
 
     steps:
-      - name: 📥 Checkout do Código
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: ⚙️ Instalar Node.js (com cache para pnpm)
-        uses: actions/setup-node@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
         with:
           node-version: '18'
-          cache: 'pnpm'
 
-      - name: 📦 Instalar `pnpm` Globalmente
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Set up pnpm in PATH
+        run: echo "$HOME/.local/share/pnpm" >> $GITHUB_PATH
+
+      - name: Update Service Worker Version
         run: |
-          npm install -g pnpm
-          export PATH="$HOME/.npm-global/bin:$PATH"
+          VERSION=$(date +"%Y%m%d%H%M%S")  # Gera um timestamp único
+          sed -i "s/const CACHE_VERSION = .*/const CACHE_VERSION = '${VERSION}';/" service-worker.js
+          sed -i "s/const CACHE_NAME = .*/const CACHE_NAME = 'romaneio-cache-${VERSION}';/" service-worker.js
+          echo "// Force update: $(date)" >> service-worker.js
 
-      - name: ✅ Verificar Instalação do `pnpm`
-        run: |
-          echo "Verificando pnpm..."
-          which pnpm || echo "pnpm NÃO encontrado"
-          pnpm --version || echo "Erro ao executar pnpm"
-
-      - name: 📂 Instalar Dependências
+      - name: Install dependencies with pnpm
         run: pnpm install --frozen-lockfile
 
-      - name: 🔍 Verificar Pacotes Instalados
-        run: pnpm list
-
-      - name: 🚀 Instalar Vercel CLI
+      - name: Configure Git
         run: |
-          pnpm add -g vercel
-          export PATH="$HOME/.npm-global/bin:$PATH"
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
 
-      - name: ✅ Verificar Instalação do `vercel`
+      - name: Commit changes
         run: |
-          echo "Verificando Vercel CLI..."
-          which vercel || echo "vercel NÃO encontrado"
-          vercel --version || echo "Erro ao executar vercel"
+          git add -A
+          git commit -m "Automated: Updated Service Worker Version" || echo "No changes to commit"
+          git push
 
-      - name: 📦 Deploy para Vercel
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          vercel --prod --token $VERCEL_TOKEN --confirm --force
+      - name: Install Vercel CLI
+        run: pnpm add -g vercel
+
+      - name: Deploy to Vercel
+        run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
