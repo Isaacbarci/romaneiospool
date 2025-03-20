@@ -17,17 +17,19 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-    event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cache) => {
-                    if (cache !== CACHE_NAME) {
-                        console.log("Removendo cache antigo:", cache);
-                        return caches.delete(cache);
-                    }
-                })
-            );
+    // Não removemos caches antigos.
+    self.clients.claim(); // Garante que o novo Service Worker assuma o controle imediatamente
+});
+
+self.addEventListener("fetch", (event) => {
+    event.respondWith(
+        caches.match(event.request).then((response) => {
+            // Se o recurso estiver no cache, ele é retornado
+            if (response) {
+                return response;
+            }
+            // Caso contrário, realiza a requisição na rede
+            return fetch(event.request);
         })
     );
-    self.clients.claim(); // Garante que o novo Service Worker assuma o controle imediatamente
 });
