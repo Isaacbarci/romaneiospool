@@ -1,5 +1,5 @@
 const CACHE_NAME = 'romaneio-cache';
-const VERSION_URL = '/version.json'; // URL do arquivo de versão no servidor
+const VERSION_URL = '/version.json?v=' + new Date().getTime(); // Evita cache
 const OFFLINE_PAGE = 'offline.html';
 
 // Lista de arquivos a serem armazenados no cache
