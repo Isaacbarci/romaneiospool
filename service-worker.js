@@ -1,81 +1,66 @@
-const CACHE_VERSION = '20250319205114';
-const CACHE_NAME = 'romaneio-cache-20250319205114';
+const CACHE_VERSION = new Date().getTime(); // Gera um novo cache sempre que houver uma atualização
+const CACHE_NAME = `romaneio-cache-${CACHE_VERSION}`;
+const OFFLINE_URL = "offline.html";
 
-// Função para adicionar um arquivo ao cache
-const addToCache = async (cacheName, file) => {
-    try {
-        const cache = await caches.open(cacheName);
-        await cache.add(file);
-    } catch (error) {
-        console.error(`Erro ao adicionar ${file} ao cache:`, error);
-    }
-};
+const FILES_TO_CACHE = [
+    "/",
+    "index.html",
+    "offline.html",
+    "image.png",
+    "style.css",
+    "script.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js",
+    "https://unpkg.com/html5-qrcode"
+];
 
-// Instalação do Service Worker
-self.addEventListener('install', (event) => {
+// Instalação do Service Worker e cache inicial
+self.addEventListener("install", (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(async (cache) => {
-            const urlsToCache = [
-                '/',
-                'index.html',
-                'image.png'
-            ];
-            await cache.addAll(urlsToCache);
-
-            // Faz fetch manual dos arquivos externos para evitar CORS
-            const externalUrls = [
-                'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js',
-                'https://unpkg.com/html5-qrcode'
-            ];
-            await Promise.all(externalUrls.map(async (url) => {
-                try {
-                    const response = await fetch(url, { mode: 'no-cors' });
-                    await cache.put(url, response);
-                } catch (error) {
-                    console.warn(`Falha ao cachear ${url}:`, error);
-                }
-            }));
+        caches.open(CACHE_NAME).then((cache) => {
+            return cache.addAll(FILES_TO_CACHE);
         })
     );
-    self.skipWaiting(); // Força a ativação imediata
+    self.skipWaiting(); // Ativa imediatamente o novo Service Worker
 });
 
-// Intercepta as requisições e serve do cache
-self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request).catch(() => {
-                return new Response('Erro ao buscar o recurso e não está no cache.', {
-                    status: 408,
-                    statusText: 'Network Error'
-                });
-            });
-        })
-    );
-});
-
-// Mensagem para adicionar um novo arquivo ao cache
-self.addEventListener('message', (event) => {
-    if (event.data.action === 'addToCache') {
-        addToCache(CACHE_NAME, event.data.file);
-    }
-});
-
-// Atualiza o cache quando houver uma nova versão
-self.addEventListener('activate', (event) => {
+// Ativação e limpeza automática de caches antigos
+self.addEventListener("activate", (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((cache) => {
                     if (cache !== CACHE_NAME) {
-                        console.log(`Removendo cache antigo: ${cache}`);
+                        console.log("Removendo cache antigo:", cache);
                         return caches.delete(cache);
                     }
                 })
             );
         })
     );
-    self.clients.claim(); // Garante que os clientes usem o novo Service Worker imediatamente
-    console.log("Service Worker Version:", CACHE_VERSION);
+    self.clients.claim(); // Garante que todos os clientes usem a versão nova imediatamente
 });
-// Force update: Wed Mar 19 20:51:14 UTC 2025
+
+// Intercepta as requisições e usa um modelo "online-first"
+self.addEventListener("fetch", (event) => {
+    if (event.request.mode === "navigate") {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    return response;
+                })
+                .catch(() => caches.match(OFFLINE_URL))
+        );
+        return;
+    }
+
+    event.respondWith(
+        fetch(event.request)
+            .then((response) => {
+                return caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(event.request, response.clone());
+                    return response;
+                });
+            })
+            .catch(() => caches.match(event.request))
+    );
+});

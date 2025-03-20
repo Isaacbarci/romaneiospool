@@ -6,8 +6,7 @@
     <title>Romaneio de Spool</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
-       <link rel="stylesheet" href="style.css?v=" + new Date().getTime()>
-    <script src="script.js?v=" + new Date().getTime() defer></script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -426,34 +425,6 @@
             });
             renderTable();
         }
-
-if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js?v=' + new Date().getTime())
-                .then((registration) => {
-                    console.log('Service Worker registrado:', registration);
-
-                    // Detecta se há uma nova versão disponível
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                if (confirm("Nova versão disponível. Atualizar agora?")) {
-                                    window.location.reload();
-                                }
-                            }
-                        });
-                    });
-                })
-                .catch((error) => {
-                    console.error('Erro ao registrar Service Worker:', error);
-                });
-
-            // Atualiza automaticamente quando uma nova versão estiver disponível
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                window.location.reload();
-            });
-        }
-
 
 function downloadExcel() {
     if (data.length === 0) {
