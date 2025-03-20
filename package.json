@@ -4,7 +4,7 @@
   "description": "Projeto de romaneios com Service Worker",
   "scripts": {
     "dev": "npx http-server public/ -p 8080",
-   "build": "node generateVersion.js"
+    "build": "node generateVersion.js",
     "start": "npx http-server public/",
     "vercel-build": "npm run build"
   },
