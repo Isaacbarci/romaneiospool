@@ -6,8 +6,6 @@
     <title>Romaneio de Spool</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <link rel="stylesheet" href="style.css?v=" + new Date().getTime()>
-<script src="script.js?v=" + new Date().getTime() defer></script>
 
     <style>
         body {
@@ -530,56 +528,5 @@ function downloadExcel() {
             }
         });
     </script>
-
-<script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js?v=' + new Date().getTime())
-            .then((registration) => {
-                console.log('Service Worker registrado:', registration);
-
-                registration.addEventListener('updatefound', () => {
-                    const newWorker = registration.installing;
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            console.log("Nova versão detectada. Atualizando automaticamente...");
-                            clearCacheAndReload();
-                        }
-                    });
-                });
-            })
-            .catch((error) => {
-                console.error('Erro ao registrar Service Worker:', error);
-            });
-
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            console.log("Nova versão ativa! Recarregando...");
-            clearCacheAndReload();
-        });
-    }
-
-    // Função para limpar cache e atualizar automaticamente
-    function clearCacheAndReload() {
-        if ('caches' in window) {
-            caches.keys().then((cacheNames) => {
-                cacheNames.forEach((cacheName) => {
-                    caches.delete(cacheName);
-                });
-            });
-        }
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then((registrations) => {
-                for (let registration of registrations) {
-                    registration.unregister();
-                }
-            });
-        }
-
-        localStorage.clear();  // Limpa qualquer dado salvo no localStorage
-        sessionStorage.clear();  // Limpa os dados temporários
-        window.location.reload(true);  // Recarrega a página forçando o carregamento do servidor
-    }
-</script>
-
 </body>
 </html>
