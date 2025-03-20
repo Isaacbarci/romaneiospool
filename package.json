@@ -1,7 +1,6 @@
 {
   "name": "romaneiospool",
   "version": "1.0.0",
-  "description": "Projeto de romaneios com Service Worker",
   "scripts": {
     "dev": "npx http-server public/ -p 8080",
     "build": "node generateVersion.js && npx http-server public/",
