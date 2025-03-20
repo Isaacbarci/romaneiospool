@@ -1,5 +1,5 @@
-const CACHE_NAME = 'romaneio-cache';
-const VERSION_URL = '/version.json?v=' + new Date().getTime(); // Evita cache
+const CACHE_NAME = 'romaneio-cache-' + new Date().getTime(); // Garante cache novo sempre
+const VERSION_URL = '/version.json?v=' + new Date().getTime(); // Evita cache antigo
 const OFFLINE_PAGE = 'offline.html';
 
 // Lista de arquivos a serem armazenados no cache
@@ -15,15 +15,9 @@ const FILES_TO_CACHE = [
 // Instalação do Service Worker e cache inicial
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        (async () => {
-            try {
-                const cache = await caches.open(CACHE_NAME);
-                await cache.addAll(FILES_TO_CACHE);
-                console.log('✅ Arquivos adicionados ao cache com sucesso!');
-            } catch (error) {
-                console.error('❌ Erro ao adicionar arquivos ao cache:', error);
-            }
-        })()
+        caches.open(CACHE_NAME).then((cache) => {
+            return cache.addAll(FILES_TO_CACHE);
+        })
     );
     self.skipWaiting(); // Ativa o novo Service Worker imediatamente
 });
@@ -31,33 +25,24 @@ self.addEventListener('install', (event) => {
 // Intercepta as requisições e serve do cache ou busca online
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-        caches.match(event.request).then(async (response) => {
+        caches.match(event.request).then((response) => {
             if (response) {
-                console.log(`🔍 Servindo do cache: ${event.request.url}`);
                 return response;
             }
-
-            try {
-                const fetchResponse = await fetch(event.request);
-
-                // Verifica se o fetch foi bem-sucedido antes de armazenar no cache dinâmico
+            return fetch(event.request).then((fetchResponse) => {
                 if (!fetchResponse || fetchResponse.status !== 200) {
                     return fetchResponse;
                 }
-
-                const cache = await caches.open(CACHE_NAME);
-                cache.put(event.request, fetchResponse.clone()); // Adiciona resposta no cache dinâmico
-                console.log(`💾 Adicionado ao cache dinâmico: ${event.request.url}`);
-                return fetchResponse;
-            } catch (error) {
-                console.error(`❌ Erro ao buscar recurso: ${event.request.url}`, error);
-                return caches.match(OFFLINE_PAGE); // Se falhar, exibe a página offline
-            }
+                return caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(event.request, fetchResponse.clone());
+                    return fetchResponse;
+                });
+            });
         })
     );
 });
 
-// Função para verificar atualizações no version.json
+// Atualiza o cache quando houver uma nova versão
 async function checkForUpdate() {
     try {
         const response = await fetch(VERSION_URL, { cache: 'no-store' });
@@ -76,7 +61,6 @@ async function checkForUpdate() {
             await Promise.all(
                 cacheNames.map((cache) => {
                     if (cache !== CACHE_NAME && cache !== 'cache-version') {
-                        console.log(`🗑 Removendo cache antigo: ${cache}`);
                         return caches.delete(cache);
                     }
                 })
@@ -90,8 +74,6 @@ async function checkForUpdate() {
             self.clients.matchAll().then((clients) => {
                 clients.forEach((client) => client.postMessage({ action: 'reload' }));
             });
-        } else {
-            console.log('🔹 Nenhuma atualização detectada.');
         }
     } catch (error) {
         console.error('❌ Erro ao verificar a versão do cache:', error);
@@ -105,7 +87,6 @@ self.addEventListener('activate', (event) => {
             Promise.all(
                 cacheNames.map((cache) => {
                     if (cache !== CACHE_NAME && cache !== 'cache-version') {
-                        console.log(`🗑 Removendo cache antigo: ${cache}`);
                         return caches.delete(cache);
                     }
                 })
@@ -114,11 +95,4 @@ self.addEventListener('activate', (event) => {
     );
     self.clients.claim();
     checkForUpdate();
-});
-
-// Notificação para a página recarregar quando houver atualização
-self.addEventListener('message', (event) => {
-    if (event.data && event.data.action === 'skipWaiting') {
-        self.skipWaiting();
-    }
 });
