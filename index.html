@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Romaneio de Spool</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 
     <style>
         body {
@@ -202,82 +203,50 @@
         // Configura o evento de input com debounce
         document.getElementById("identificacaoFilter").addEventListener("input", applyFilterDebounced);
 
+        function confirmUpdate() {
+            const selectedFile = document.getElementById("fileList").value;
+            if (!selectedFile) {
+                alert("Selecione um arquivo da lista para atualizar.");
+                return;
+            }
 
-function confirmUpdate() {
-    const selectedFile = document.getElementById("fileList").value;
-    if (!selectedFile) {
-        alert("Selecione um arquivo da lista para atualizar.");
-        return;
-    }
+            const confirmUpdate = confirm("Deseja realmente atualizar o arquivo? Todas as alterações não salvas serão perdidas.");
+            if (confirmUpdate) {
+                loadSelectedFile(selectedFile);
+            }
+        }
 
-    const confirmUpdate = confirm("Deseja realmente atualizar o arquivo? Todas as alterações não salvas serão perdidas.");
-    if (confirmUpdate) {
-        // Limpa o cache antes de carregar o novo arquivo
-        clearCache();
-        loadSelectedFile(selectedFile);
-    }
-}
+        function loadSelectedFile(fileName) {
+            fetch(fileName)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erro ao carregar o arquivo: ${response.statusText}`);
+                    }
+                    return response.arrayBuffer();
+                })
+                .then(arrayBuffer => {
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array', cellFormula: true });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false });
 
-function clearCache() {
-    console.log("Limpando cache...");
+                    if (jsonData.length === 0) {
+                        throw new Error("O arquivo está vazio ou não contém dados.");
+                    }
 
-    // Removendo dados do localStorage
-    localStorage.removeItem("uploadedData");
-    localStorage.removeItem("editedRows");
-
-    // Resetando variáveis globais
-    data = [];
-    filteredData = [];
-    editedRows = new Set();
-
-    // Limpa a tabela na interface
-    document.getElementById("dataTable").querySelector("thead").innerHTML = "";
-    document.getElementById("dataTable").querySelector("tbody").innerHTML = "";
-
-    // Verifica se há um Service Worker ativo e o força a atualizar
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-            registrations.forEach(registration => {
-                registration.unregister().then(() => {
-                    console.log("Service Worker desativado. Atualizando página...");
-                    window.location.reload();
+                    data = jsonData;
+                    filteredData = data.slice(1);
+                    editedRows.clear();
+                    findColumnIndexes();
+                    renderTable();
+                    saveToLocalStorage("uploadedData", data);
+                    saveToLocalStorage("editedRows", Array.from(editedRows));
+                })
+                .catch(error => {
+                    console.error("Erro ao carregar o arquivo:", error);
+                    alert(`Erro ao carregar o arquivo: ${error.message}`);
                 });
-            });
-        });
-    }
-}
+        }
 
-function loadSelectedFile(fileName) {
-    fetch(fileName)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Erro ao carregar o arquivo: ${response.statusText}`);
-            }
-            return response.arrayBuffer();
-        })
-        .then(arrayBuffer => {
-            const workbook = XLSX.read(arrayBuffer, { type: 'array', cellFormula: true });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false });
-
-            if (jsonData.length === 0) {
-                throw new Error("O arquivo está vazio ou não contém dados.");
-            }
-
-            data = jsonData;
-            filteredData = data.slice(1);
-            editedRows.clear();
-            findColumnIndexes();
-            renderTable();
-            saveToLocalStorage("uploadedData", data);
-            saveToLocalStorage("editedRows", Array.from(editedRows));
-        })
-        .catch(error => {
-            console.error("Erro ao carregar o arquivo:", error);
-            alert(`Erro ao carregar o arquivo: ${error.message}`);
-        });
-}
-        
         function formatDate(dateString) {
             if (!dateString) return "";
             const date = new Date(dateString);
@@ -557,8 +526,36 @@ function downloadExcel() {
                 editedRows = new Set(storedEditedRows);
                 renderTable();
             }
+        });
 
-</script>
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js?v=' + new Date().getTime())
+            .then((registration) => {
+                console.log('Service Worker registrado:', registration);
+
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            console.log("Nova versão detectada. Atualizando...");
+                            window.location.reload();
+                        }
+                    });
+                });
+            })
+            .catch((error) => {
+                console.error('Erro ao registrar Service Worker:', error);
+            });
+
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log("Nova versão ativa! Recarregando...");
+            window.location.reload();
+        });
+    }
+
+
+    </script>
 
 </body>
 </html>
