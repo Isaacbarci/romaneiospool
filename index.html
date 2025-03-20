@@ -203,50 +203,82 @@
         // Configura o evento de input com debounce
         document.getElementById("identificacaoFilter").addEventListener("input", applyFilterDebounced);
 
-        function confirmUpdate() {
-            const selectedFile = document.getElementById("fileList").value;
-            if (!selectedFile) {
-                alert("Selecione um arquivo da lista para atualizar.");
-                return;
-            }
 
-            const confirmUpdate = confirm("Deseja realmente atualizar o arquivo? Todas as alterações não salvas serão perdidas.");
-            if (confirmUpdate) {
-                loadSelectedFile(selectedFile);
-            }
-        }
+function confirmUpdate() {
+    const selectedFile = document.getElementById("fileList").value;
+    if (!selectedFile) {
+        alert("Selecione um arquivo da lista para atualizar.");
+        return;
+    }
 
-        function loadSelectedFile(fileName) {
-            fetch(fileName)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Erro ao carregar o arquivo: ${response.statusText}`);
-                    }
-                    return response.arrayBuffer();
-                })
-                .then(arrayBuffer => {
-                    const workbook = XLSX.read(arrayBuffer, { type: 'array', cellFormula: true });
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false });
+    const confirmUpdate = confirm("Deseja realmente atualizar o arquivo? Todas as alterações não salvas serão perdidas.");
+    if (confirmUpdate) {
+        // Limpa o cache antes de carregar o novo arquivo
+        clearCache();
+        loadSelectedFile(selectedFile);
+    }
+}
 
-                    if (jsonData.length === 0) {
-                        throw new Error("O arquivo está vazio ou não contém dados.");
-                    }
+function clearCache() {
+    console.log("Limpando cache...");
 
-                    data = jsonData;
-                    filteredData = data.slice(1);
-                    editedRows.clear();
-                    findColumnIndexes();
-                    renderTable();
-                    saveToLocalStorage("uploadedData", data);
-                    saveToLocalStorage("editedRows", Array.from(editedRows));
-                })
-                .catch(error => {
-                    console.error("Erro ao carregar o arquivo:", error);
-                    alert(`Erro ao carregar o arquivo: ${error.message}`);
+    // Removendo dados do localStorage
+    localStorage.removeItem("uploadedData");
+    localStorage.removeItem("editedRows");
+
+    // Resetando variáveis globais
+    data = [];
+    filteredData = [];
+    editedRows = new Set();
+
+    // Limpa a tabela na interface
+    document.getElementById("dataTable").querySelector("thead").innerHTML = "";
+    document.getElementById("dataTable").querySelector("tbody").innerHTML = "";
+
+    // Verifica se há um Service Worker ativo e o força a atualizar
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(registration => {
+                registration.unregister().then(() => {
+                    console.log("Service Worker desativado. Atualizando página...");
+                    window.location.reload();
                 });
-        }
+            });
+        });
+    }
+}
 
+function loadSelectedFile(fileName) {
+    fetch(fileName)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Erro ao carregar o arquivo: ${response.statusText}`);
+            }
+            return response.arrayBuffer();
+        })
+        .then(arrayBuffer => {
+            const workbook = XLSX.read(arrayBuffer, { type: 'array', cellFormula: true });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false });
+
+            if (jsonData.length === 0) {
+                throw new Error("O arquivo está vazio ou não contém dados.");
+            }
+
+            data = jsonData;
+            filteredData = data.slice(1);
+            editedRows.clear();
+            findColumnIndexes();
+            renderTable();
+            saveToLocalStorage("uploadedData", data);
+            saveToLocalStorage("editedRows", Array.from(editedRows));
+        })
+        .catch(error => {
+            console.error("Erro ao carregar o arquivo:", error);
+            alert(`Erro ao carregar o arquivo: ${error.message}`);
+        });
+}
+        
         function formatDate(dateString) {
             if (!dateString) return "";
             const date = new Date(dateString);
