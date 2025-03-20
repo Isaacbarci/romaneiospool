@@ -12,21 +12,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout do Código
         uses: actions/checkout@v2
 
-      - name: Set up Node.js
+      - name: ⚙️ Configurar Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      - name: Install dependencies
+      - name: 📂 Criar pasta public se não existir
+        run: mkdir -p public
+
+      - name: 📦 Instalar Dependências
         run: npm install
 
-      - name: Generate version.json
+      - name: 🛠️ Gerar version.json
         run: node generateVersion.js
 
-      - name: Commit version.json if changed
+      - name: 🔎 Debug - Listar arquivos antes do commit
+        run: ls -R public/
+
+      - name: 📝 Commit version.json se houver mudanças
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
@@ -34,13 +40,13 @@ jobs:
           git commit -m "🔄 Atualização automática do version.json" || echo "Nenhuma mudança detectada"
           git push origin main || echo "Nenhuma mudança para enviar"
 
-      - name: Install Vercel CLI
+      - name: 🚀 Instalar Vercel CLI
         run: npm install -g vercel
 
-      - name: Debug Vercel Token
+      - name: 🔑 Debug Vercel Token
         run: |
           if [ -z "$VERCEL_TOKEN" ]; then
-            echo "ERRO: O token da Vercel não foi carregado! ⚠️"
+            echo "❌ ERRO: O token da Vercel não foi carregado! ⚠️"
             exit 1
           else
             echo "✅ O token foi carregado corretamente!"
@@ -48,7 +54,10 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
-      - name: Deploy to Vercel
+      - name: 📜 Debug - Listar arquivos antes do deploy
+        run: ls -R
+
+      - name: 🌍 Deploy para Vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel --token "$VERCEL_TOKEN" deploy --prod --yes
+        run: vercel --token "$VERCEL_TOKEN" --prod --yes --force
