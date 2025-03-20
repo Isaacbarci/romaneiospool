@@ -6,6 +6,8 @@
     <title>Romaneio de Spool</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <link rel="stylesheet" href="style.css?v=" + new Date().getTime()>
+<script src="script.js?v=" + new Date().getTime() defer></script>
 
     <style>
         body {
@@ -426,7 +428,7 @@
             renderTable();
         }
 
-        if ('serviceWorker' in navigator) {
+       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('service-worker.js?v=' + new Date().getTime())
             .then((registration) => {
                 console.log('Service Worker registrado:', registration);
@@ -452,7 +454,23 @@
             window.location.reload();
         });
     }
-           
+
+    // Limpa caches antigos ao recarregar a página
+    window.addEventListener('load', () => {
+        if ('caches' in window) {
+            caches.keys().then((cacheNames) => {
+                cacheNames.forEach((cacheName) => {
+                    caches.delete(cacheName);
+                });
+            });
+        }
+    });
+
+    // Limpa localStorage e sessionStorage para evitar cache de dados antigos
+    window.addEventListener('load', () => {
+        localStorage.clear();
+        sessionStorage.clear();
+    });
 
 function downloadExcel() {
     if (data.length === 0) {
