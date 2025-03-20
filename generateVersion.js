@@ -1,31 +1,36 @@
 const fs = require('fs');
 const path = require('path');
 
-// Pasta onde o version.json será salvo
-const dir = 'public/';
+// Definir corretamente o caminho da pasta 'public'
+const dir = path.join(__dirname, 'public');
 
-// Cria a pasta se não existir
+// Criar a pasta 'public' se não existir
 if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
     console.log(`📂 Criada pasta: ${dir}`);
 }
 
 // Lista de arquivos monitorados para mudanças
-const filesToCheck = ['public/index.html', 'public/image.png', 'public/app.js', 'public/service-worker.js'];
+const filesToCheck = [
+    path.join(dir, 'index.html'),
+    path.join(dir, 'image.png'),
+    path.join(dir, 'app.js'),
+    path.join(dir, 'service-worker.js')
+];
 
+// Obtém o timestamp da última modificação dos arquivos monitorados
 function getLastModifiedTime(files) {
     return Math.max(...files.map(file => {
         if (fs.existsSync(file)) {
-            return fs.statSync(file).mtimeMs; // Obtém a data da última modificação
+            return fs.statSync(file).mtimeMs;
         }
         return 0;
     }));
 }
 
-// Obtém o timestamp do último arquivo alterado
 const lastModified = getLastModifiedTime(filesToCheck);
 
-// Cria ou atualiza o version.json com o timestamp da última alteração
+// Criar ou atualizar `version.json` corretamente dentro da pasta 'public'
 const versionData = { version: lastModified };
 fs.writeFileSync(path.join(dir, 'version.json'), JSON.stringify(versionData, null, 2));
 
