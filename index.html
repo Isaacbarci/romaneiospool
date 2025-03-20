@@ -455,21 +455,28 @@
         });
     }
 
-    // Limpa caches antigos ao recarregar a página
-    window.addEventListener('load', () => {
-        if ('caches' in window) {
-            caches.keys().then((cacheNames) => {
-                cacheNames.forEach((cacheName) => {
-                    caches.delete(cacheName);
-                });
-            });
+    // Salva dados no `localStorage` para manter após fechar o navegador
+    function saveToLocalStorage(key, data) {
+        try {
+            localStorage.setItem(key, JSON.stringify(data));
+        } catch (error) {
+            console.error("Erro ao salvar no localStorage:", error);
         }
-    });
+    }
 
-    // Limpa localStorage e sessionStorage para evitar cache de dados antigos
-    window.addEventListener('load', () => {
-        localStorage.clear();
-        sessionStorage.clear();
+    function loadFromLocalStorage(key) {
+        const storedData = localStorage.getItem(key);
+        return storedData ? JSON.parse(storedData) : null;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const storedData = loadFromLocalStorage("uploadedData");
+        if (storedData) {
+            data = storedData;
+            filteredData = data.slice(1);
+            findColumnIndexes();
+            renderTable();
+        }
     });
 
 function downloadExcel() {
