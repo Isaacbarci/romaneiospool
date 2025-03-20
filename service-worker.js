@@ -1,14 +1,12 @@
-const CACHE_VERSION = new Date().getTime(); // Atualiza sempre que houver mudanças
+const CACHE_VERSION = new Date().getTime(); // Atualiza a versão sempre que há uma mudança
 const CACHE_NAME = `romaneio-cache-${CACHE_VERSION}`;
-const OFFLINE_URL = "offline.html";
-
 const FILES_TO_CACHE = [
     "/",
     "index.html",
-    "offline.html",
-    "image.png",
     "style.css",
     "script.js",
+    "image.png",
+    "offline.html",
     "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js",
     "https://unpkg.com/html5-qrcode"
 ];
@@ -17,13 +15,14 @@ const FILES_TO_CACHE = [
 self.addEventListener("install", (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
+            console.log("Cache atualizado:", CACHE_NAME);
             return cache.addAll(FILES_TO_CACHE);
         })
     );
     self.skipWaiting(); // Ativa imediatamente o novo Service Worker
 });
 
-// Ativação e remoção de caches antigos
+// Ativação: Remove caches antigos e força a atualização
 self.addEventListener("activate", (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
@@ -40,7 +39,7 @@ self.addEventListener("activate", (event) => {
     self.clients.claim(); // Garante que todos os clientes usem a versão nova imediatamente
 });
 
-// Intercepta as requisições e usa um modelo "offline-first"
+// Intercepta requisições e sempre busca a versão mais recente do site
 self.addEventListener("fetch", (event) => {
     event.respondWith(
         fetch(event.request)
@@ -50,8 +49,6 @@ self.addEventListener("fetch", (event) => {
                     return response;
                 });
             })
-            .catch(() => caches.match(event.request).then((response) => {
-                return response || caches.match(OFFLINE_URL);
-            }))
+            .catch(() => caches.match(event.request))
     );
 });
