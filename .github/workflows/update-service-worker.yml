@@ -36,8 +36,8 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add public/version.json
-          git commit -m "🔄 Atualização automática do version.json" || echo "Nenhuma mudança detectada"
+          git add public/version.json || echo "Nenhuma mudança detectada"
+          git commit -m "🔄 Atualização automática do version.json" || echo "Nenhuma mudança para enviar"
           git push origin main || echo "Nenhuma mudança para enviar"
 
       - name: 🚀 Instalar Vercel CLI
