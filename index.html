@@ -428,57 +428,6 @@
             renderTable();
         }
 
-       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js?v=' + new Date().getTime())
-            .then((registration) => {
-                console.log('Service Worker registrado:', registration);
-
-                // Detecta se há uma nova versão disponível
-                registration.addEventListener('updatefound', () => {
-                    const newWorker = registration.installing;
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            if (confirm("Nova versão disponível. Atualizar agora?")) {
-                                window.location.reload();
-                            }
-                        }
-                    });
-                });
-            })
-            .catch((error) => {
-                console.error('Erro ao registrar Service Worker:', error);
-            });
-
-        // Atualiza automaticamente quando uma nova versão estiver disponível
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            window.location.reload();
-        });
-    }
-
-    // Salva dados no `localStorage` para manter após fechar o navegador
-    function saveToLocalStorage(key, data) {
-        try {
-            localStorage.setItem(key, JSON.stringify(data));
-        } catch (error) {
-            console.error("Erro ao salvar no localStorage:", error);
-        }
-    }
-
-    function loadFromLocalStorage(key) {
-        const storedData = localStorage.getItem(key);
-        return storedData ? JSON.parse(storedData) : null;
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-        const storedData = loadFromLocalStorage("uploadedData");
-        if (storedData) {
-            data = storedData;
-            filteredData = data.slice(1);
-            findColumnIndexes();
-            renderTable();
-        }
-    });
-
 function downloadExcel() {
     if (data.length === 0) {
         alert("Nenhum dado disponível para exportar.");
@@ -581,5 +530,56 @@ function downloadExcel() {
             }
         });
     </script>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js?v=' + new Date().getTime())
+            .then((registration) => {
+                console.log('Service Worker registrado:', registration);
+
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            console.log("Nova versão detectada. Atualizando automaticamente...");
+                            clearCacheAndReload();
+                        }
+                    });
+                });
+            })
+            .catch((error) => {
+                console.error('Erro ao registrar Service Worker:', error);
+            });
+
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log("Nova versão ativa! Recarregando...");
+            clearCacheAndReload();
+        });
+    }
+
+    // Função para limpar cache e atualizar automaticamente
+    function clearCacheAndReload() {
+        if ('caches' in window) {
+            caches.keys().then((cacheNames) => {
+                cacheNames.forEach((cacheName) => {
+                    caches.delete(cacheName);
+                });
+            });
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+                for (let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+
+        localStorage.clear();  // Limpa qualquer dado salvo no localStorage
+        sessionStorage.clear();  // Limpa os dados temporários
+        window.location.reload(true);  // Recarrega a página forçando o carregamento do servidor
+    }
+</script>
+
 </body>
 </html>
