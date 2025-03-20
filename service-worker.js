@@ -1,5 +1,5 @@
 const CACHE_VERSION = new Date().getTime();
-const CACHE_NAME = `romaneio-cache-${CACHE_VERSION}`;
+
 
 // Função para adicionar um arquivo ao cache
 const addToCache = async (cacheName, file) => {
