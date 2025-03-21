@@ -1,4 +1,4 @@
-const CACHE_NAME = 'romaneio-cache-v21';
+const CACHE_NAME = 'romaneio-cache-v22';
 
 const addToCache = async (cacheName, file) => {
     const cache = await caches.open(cacheName);
