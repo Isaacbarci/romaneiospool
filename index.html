@@ -423,7 +423,18 @@
                 const isometrico = row[columnIndexes["isométrico"]]?.toString().toLowerCase();
                 return isometrico?.includes(filterValue) || row.some(cell => cell.toString().toLowerCase().includes(filterValue));
             });
-            renderTable();
+       renderTable();
+            
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then((registration) => {
+                    console.log('Service Worker registrado com sucesso:', registration);
+                })
+                .catch((error) => {
+                    console.error('Erro ao registrar o Service Worker:', error);
+                });
         }
 
 function downloadExcel() {
@@ -527,12 +538,6 @@ function downloadExcel() {
                 renderTable();
             }
         });
-
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js')
-            .then(() => console.log('Service Worker registrado!'))
-            .catch((err) => console.error('Erro ao registrar SW:', err));
-    }
 
 
 </script>
