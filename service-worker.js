@@ -1,28 +1,31 @@
-const CACHE_NAME = 'romaneio-cache-v22';
+const CACHE_NAME = 'romaneio-cache-v23';
 
-const addToCache = async (cacheName, file) => {
-    const cache = await caches.open(cacheName);
-    await cache.add(file);
-};
+// Lista de arquivos essenciais que serão salvos para uso offline
+const FILES_TO_CACHE = [
+    '/',
+    'index.html',
+    'image.png',
+    'app.js',             // se tiver seu próprio JS
+    'style.css',          // se tiver CSS
+    'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js',
+    'https://unpkg.com/html5-qrcode',
+];
 
-// Instalação (pré-cache de arquivos básicos)
+// Adiciona ao cache durante a instalação
 self.addEventListener('install', (event) => {
+    console.log('[SW] Instalando...');
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => cache.addAll([
-                '/',
-                'index.html',
-                'offline.html',
-                'image.png',
-                'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js',
-                'https://unpkg.com/html5-qrcode',
-            ]))
+        caches.open(CACHE_NAME).then((cache) => {
+            console.log('[SW] Cache inicial');
+            return cache.addAll(FILES_TO_CACHE);
+        })
     );
     self.skipWaiting();
 });
 
-// Ativação: remove caches antigos
+// Ativação: limpa caches antigos
 self.addEventListener('activate', (event) => {
+    console.log('[SW] Ativando...');
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
@@ -37,7 +40,7 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Busca sempre da rede quando online, usa cache só offline
+// Sempre tenta pegar da rede, se falhar usa o cache (modo offline real)
 self.addEventListener('fetch', (event) => {
     event.respondWith(
         fetch(event.request)
@@ -45,24 +48,16 @@ self.addEventListener('fetch', (event) => {
                 return response;
             })
             .catch(() => {
-                return caches.match(event.request)
-                    .then((cachedResponse) => {
-                        if (cachedResponse) {
-                            return cachedResponse;
-                        }
-
-                        // Se for uma navegação (HTML) e não houver cache, mostra offline.html
-                        if (event.request.mode === 'navigate') {
-                            return caches.match('offline.html');
-                        }
-                    });
+                return caches.match(event.request);
             })
     );
 });
 
-// Permite adicionar dinamicamente arquivos ao cache
+// Permite adicionar arquivos dinamicamente
 self.addEventListener('message', (event) => {
     if (event.data.action === 'addToCache') {
-        addToCache(CACHE_NAME, event.data.file);
+        caches.open(CACHE_NAME).then((cache) => {
+            cache.add(event.data.file);
+        });
     }
 });
