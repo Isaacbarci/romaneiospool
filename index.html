@@ -146,7 +146,7 @@
 
     <button onclick="confirmUpdate()">Atualizar Arquivo</button>
     <input type="text" id="identificacaoFilter" placeholder="Filtrar por ISOMÉTRICO ou QR Code">
-    <button onclick="downloadExcel()">Download do Excel</button>
+    <button onclick="downloadExcel()">Download Excel</button>
     <button onclick="startQrScanner()">Escanear QR Code</button>
 
     <div id="qr-container" style="display: none;">
@@ -424,7 +424,7 @@
                 return isometrico?.includes(filterValue) || row.some(cell => cell.toString().toLowerCase().includes(filterValue));
             });
        renderTable();
-            
+
         }
 
         if ('serviceWorker' in navigator) {
